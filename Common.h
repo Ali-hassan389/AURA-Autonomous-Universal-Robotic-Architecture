@@ -1,71 +1,79 @@
 #pragma once
-#include<string>
-#include<iostream>
+#include <string>
+#include <iostream>
+
 using namespace std;
-// These enums we declared will be used throughtout the files
+
+// These enums we declared will be used throughout the files
 enum LocationType {
     Location_Rack,
     Location_Packing,
     Location_Charging
 };
+
 enum PathStatus {
-	Path_Open,
-	Path_Blocked
+    Path_Open,
+    Path_Blocked
 };
+
 enum OrderStatus {
-	Order_Pending,
-	Order_Reserved,
-	Order_Assigned,
-	Order_PartiallyFulfilled,
-	Order_Completed,
-	Order_Cancelled
+    Order_Pending,
+    Order_Reserved,
+    Order_Assigned,
+    Order_PartiallyFulfilled,
+    Order_Completed,
+    Order_Cancelled
 };
+
 enum RobotStatus {
-	Robot_Available,
-	Robot_Assigned,
-	Robot_WaitingforCharging,
-	Robot_Charging,
-	Robot_UnAvailable
+    Robot_Available,
+    Robot_Assigned,
+    Robot_WaitingforCharging,
+    Robot_Charging,
+    Robot_UnAvailable
 };
-enum RobotType{
-	Type_Picker,
-	Type_Carrier,
-	Type_Heavy
+
+enum RobotType {
+    Type_Picker,
+    Type_Carrier,
+    Type_Heavy
 };
-//These Constants will be used througout the files
-double Rate_Picker = 0.20;
-double Rate_Carrier = 0.25;
-double Rate_Heavy = 0.35;
 
-double Safety_Reserve = 10.0;
-double Low_Battery_Limit = 20.0;
-double Full_Battery = 100.0;
+// These Constants will be used throughout the files 
+inline double Rate_Picker = 0.20;
+inline double Rate_Carrier = 0.25;
+inline double Rate_Heavy = 0.35;
 
-int Picker_MaxCapacity = 15;
-int Carrier_MinCapacity = 15;
-int Carrier_MaxCapacity = 30;
-int Heavy_MaxCapacity = 60;
+inline double Safety_Reserve = 10.0;
+inline double Low_Battery_Limit = 20.0;
+inline double Full_Battery = 100.0;
 
-int Picker_MaxUnitWeight = 5;
-int Heavy_MinOrderWeight = 15;
-int Heavy_MinUnitWeight = 10;
+inline int Picker_MaxCapacity = 15;
+inline int Carrier_MinCapacity = 15;
+inline int Carrier_MaxCapacity = 30;
+inline int Heavy_MaxCapacity = 60;
 
-int MaxSlots_PerStation = 10;
-int Max_Fields = 8;
+inline int Picker_MaxUnitWeight = 5;
+inline int Heavy_MinOrderWeight = 15;
+inline int Heavy_MinUnitWeight = 10;
+
+inline int MaxSlots_PerStation = 10;
+inline int Max_Fields = 8;
 
 
-//String helper functions 
-string toUpperCase(const string& str) {
-	string result = str;
-	for (int i = 0; i < (int)result.length(); i++) {
-		if (result[i] >= 'a' && result[i] <= 'z') {
-			result[i] = result[i] - 32;
-		}
-	}
-	return result;
+// String helper functions 
+inline string toUpperCase( string str) {
+    string result = str;
+    for (int i = 0; i < (int)result.length(); i++) {
+        if (result[i] >= 'a' && result[i] <= 'z') {
+            result[i] = result[i] - 32;
+        }
+    }
+    return result;
 }
+
 // uses 2 pointers to check spaces one from nonempty space to left and then from right
-string trimText(const string& str) {
+inline string trimText( string str) {
     int start = 0;
     int end = (int)str.length() - 1;
     while (start <= end) {
@@ -93,8 +101,9 @@ string trimText(const string& str) {
     }
     return result;
 }
-int splitLine(const string& line, char delimiter, string fields[], int maxFields) {
-    if (line.empty() || maxFields <= 0) 
+
+inline int splitLine( string line, char delimiter, string fields[], int maxFields) {
+    if (line.empty() || maxFields <= 0)
         return 0;
 
     int count = 0;
@@ -120,9 +129,9 @@ int splitLine(const string& line, char delimiter, string fields[], int maxFields
     return count;
 }
 
-//  Input Validation helper functions
-// Read an integer within a range
-int readIntInRange(const string& prompt, int low, int high) {
+
+// Input Validation helper functions
+inline int readIntInRange(string prompt, int low, int high) {
     int value;
     while (true) {
         cout << prompt;
@@ -137,14 +146,13 @@ int readIntInRange(const string& prompt, int low, int high) {
         }
         else {
             cout << "Invalid input. Please enter a valid integer.\n";
-            cin.clear();         
-            cin.ignore(10000, '\n'); 
+            cin.clear();
+            cin.ignore(10000, '\n');
         }
     }
 }
 
-//Read a double within a range
-double readDoubleInRange(const string& prompt, double low, double high) {
+inline double readDoubleInRange( string prompt, double low, double high) {
     double value;
     while (true) {
         cout << prompt;
@@ -165,13 +173,12 @@ double readDoubleInRange(const string& prompt, double low, double high) {
     }
 }
 
-// Read a non-empty string
-string readNonEmptyString(const string& prompt) {
+inline string readNonEmptyString(string prompt) {
     string input;
     while (true) {
         cout << prompt;
         getline(cin, input);
-        input = trimText(input); 
+        input = trimText(input);
 
         if (!input.empty()) {
             return input;
@@ -180,11 +187,10 @@ string readNonEmptyString(const string& prompt) {
     }
 }
 
-//Read Yes/No response
-bool readYesNo(const string& prompt) {
+inline bool readYesNo(string prompt) {
     while (true) {
         string response = readNonEmptyString(prompt + " (y/n): ");
-        response = toUpperCase(response); 
+        response = toUpperCase(response);
 
         if (response == "Y" || response == "YES") {
             return true;
@@ -196,159 +202,177 @@ bool readYesNo(const string& prompt) {
     }
 }
 
-// Pause the screen until Enter is pressed
-void pauseScreen() {
+inline void pauseScreen() {
     cout << "Press Enter to continue...";
     string dummy;
     getline(cin, dummy);
 }
 
-// enums to string fucnctions
-string locationTypeToText(LocationType type) {
+
+// enums to string functions
+inline string locationTypeToText(LocationType type) {
     switch (type) {
-    case Location_Rack:     
+    case Location_Rack:
         return "RACK";
-    case Location_Packing: 
+    case Location_Packing:
         return "PACKING";
-    case Location_Charging: 
+    case Location_Charging:
         return "CHARGING";
     }
     return "UNKNOWN";
 }
-bool parseLocationType(string text, LocationType& outType) {
+
+inline bool parseLocationType(string text, LocationType& outType) {
     text = toUpperCase(text);
-    if (text == "RACK") { outType = Location_Rack; 
-    return true; }
-    if (text == "PACKING") { outType = Location_Packing; 
-    return true; }
-    if (text == "CHARGING") { outType = Location_Charging;
-    return true; }
+    if (text == "RACK") { 
+        outType = Location_Rack; 
+        return true; }
+    if (text == "PACKING") { 
+        outType = Location_Packing; 
+        return true; }
+    if (text == "CHARGING") { 
+        outType = Location_Charging;
+        return true; }
     return false;
 }
-string pathStatusToText(PathStatus status) {
+
+inline string pathStatusToText(PathStatus status) {
     switch (status) {
-    case Path_Open:    
+    case Path_Open:
         return "OPEN";
-    case Path_Blocked: 
+    case Path_Blocked:
         return "BLOCKED";
     }
     return "UNKNOWN";
 }
-bool parsePathStatus(string text, PathStatus& outStatus) {
+
+inline bool parsePathStatus(string text, PathStatus& outStatus) {
     text = toUpperCase(text);
-    if (text == "OPEN") { outStatus = Path_Open;
-    return true; }
-    if (text == "BLOCKED") { outStatus = Path_Blocked;
-    return true; }
+    if (text == "OPEN") { 
+        outStatus = Path_Open;
+        return true; }
+    if (text == "BLOCKED") { 
+        outStatus = Path_Blocked; 
+        return true; }
     return false;
 }
-string orderStatusToText(OrderStatus status) {
+
+inline string orderStatusToText(OrderStatus status) {
     switch (status) {
-    case Order_Pending:          
+    case Order_Pending:
         return "PENDING";
-    case Order_Reserved:          
+    case Order_Reserved:
         return "RESERVED";
-    case Order_Assigned:          
+    case Order_Assigned:
         return "ASSIGNED";
     case Order_PartiallyFulfilled:
         return "PARTIALLY_FULFILLED";
-    case Order_Completed:         
+    case Order_Completed:
         return "COMPLETED";
-    case Order_Cancelled:         
+    case Order_Cancelled:
         return "CANCELLED";
     }
     return "UNKNOWN";
 }
-bool parseOrderStatus(string text, OrderStatus& outStatus) {
+
+inline bool parseOrderStatus(string text, OrderStatus& outStatus) {
     text = toUpperCase(text);
-    if (text == "PENDING") { 
-        outStatus = Order_Pending;           
+    if (text == "PENDING") {
+        outStatus = Order_Pending;
         return true; }
     if (text == "RESERVED") { 
-        outStatus = Order_Reserved;         
+        outStatus = Order_Reserved; 
         return true; }
     if (text == "ASSIGNED") {
-        outStatus = Order_Assigned;          
+        outStatus = Order_Assigned;
         return true; }
     if (text == "PARTIALLY_FULFILLED" || text == "PARTIALLYFULFILLED") {
-        outStatus = Order_PartiallyFulfilled; 
+        outStatus = Order_PartiallyFulfilled;
         return true;
     }
     if (text == "COMPLETED") { 
-        outStatus = Order_Completed;   
+        outStatus = Order_Completed; 
         return true; }
     if (text == "CANCELLED") { 
-        outStatus = Order_Cancelled;     
+        outStatus = Order_Cancelled;
         return true; }
     return false;
 }
-string robotStatusToText(RobotStatus status) {
+
+inline string robotStatusToText(RobotStatus status) {
     switch (status) {
-    case Robot_Available:          
+    case Robot_Available:
         return "AVAILABLE";
-    case Robot_Assigned:           
+    case Robot_Assigned:
         return "ASSIGNED";
-    case Robot_WaitingforCharging: 
+    case Robot_WaitingforCharging:
         return "WAITING_FOR_CHARGING";
-    case Robot_Charging:           
+    case Robot_Charging:
         return "CHARGING";
-    case Robot_UnAvailable:       
+    case Robot_UnAvailable:
         return "UNAVAILABLE";
     }
     return "UNKNOWN";
 }
-bool parseRobotStatus(string text, RobotStatus& outStatus) {
+
+inline bool parseRobotStatus(string text, RobotStatus& outStatus) {
     text = toUpperCase(text);
-    if (text == "AVAILABLE") {
-        outStatus = Robot_Available;          
+    if (text == "AVAILABLE") { 
+        outStatus = Robot_Available;
         return true; }
-    if (text == "ASSIGNED") {
-        outStatus = Robot_Assigned;        
+    if (text == "ASSIGNED") { 
+        outStatus = Robot_Assigned; 
         return true; }
     if (text == "WAITING_FOR_CHARGING" || text == "WAITINGFORCHARGING") {
-        outStatus = Robot_WaitingforCharging; 
+        outStatus = Robot_WaitingforCharging;
         return true;
     }
-    if (text == "CHARGING") { 
-        outStatus = Robot_Charging;  
+    if (text == "CHARGING") {
+        outStatus = Robot_Charging; 
         return true; }
-    if (text == "UNAVAILABLE" || text == "UN_AVAILABLE") { 
-        outStatus = Robot_UnAvailable;   
+    if (text == "UNAVAILABLE" || text == "UN_AVAILABLE") {
+        outStatus = Robot_UnAvailable; 
         return true; }
     return false;
 }
-string robotTypeToText(RobotType type) {
+
+inline string robotTypeToText(RobotType type) {
     switch (type) {
-    case Type_Picker: 
+    case Type_Picker:
         return "PICKER";
     case Type_Carrier:
         return "CARRIER";
-    case Type_Heavy:  
+    case Type_Heavy:
         return "HEAVY";
     }
     return "UNKNOWN";
 }
-bool parseRobotType(string text, RobotType& outType) {
+
+inline bool parseRobotType(string text, RobotType& outType) {
     text = toUpperCase(text);
     if (text == "PICKER") { 
-        outType = Type_Picker;  
+        outType = Type_Picker; 
         return true; }
     if (text == "CARRIER") { 
         outType = Type_Carrier; 
         return true; }
     if (text == "HEAVY") { 
-        outType = Type_Heavy;   
+        outType = Type_Heavy;
         return true; }
     return false;
 }
+
+
 // Battery Formula 
-double legConsumption(int distance, double rate, double carriedWeight, double maxCapacity) {
-    if (maxCapacity <= 0) 
-        return distance * rate; 
+inline double legConsumption(int distance, double rate, double carriedWeight, double maxCapacity) {
+    if (maxCapacity <= 0)
+        return distance * rate;
     // Safety against division by zero
     return distance * rate * (1.0 + 0.5 * ((double)carriedWeight / maxCapacity));
 }
-//RouteResult & Linked List
+
+
+// RouteResult & Linked List
 struct RouteNode {
     string locationId;
     RouteNode* next;
@@ -364,7 +388,7 @@ private:
         locationCount = other.locationCount;
         found = other.found;
 
-        if (!other.head) 
+        if (!other.head)
             return;
 
         head = new RouteNode(other.head->locationId);
@@ -432,7 +456,7 @@ public:
     }
 
     string lastId() const {
-        if (!head) 
+        if (!head)
             return "";
         RouteNode* curr = head;
         while (curr->next) {
