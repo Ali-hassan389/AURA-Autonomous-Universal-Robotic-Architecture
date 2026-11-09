@@ -57,8 +57,8 @@ inline int Picker_MaxUnitWeight = 5;
 inline int Heavy_MinOrderWeight = 15;
 inline int Heavy_MinUnitWeight = 10;
 
-inline int MaxSlots_PerStation = 10;
-inline int Max_Fields = 8;
+const inline int MaxSlots_PerStation = 10;
+const inline int Max_Fields = 8;
 
 
 // String helper functions 
