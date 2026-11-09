@@ -2,8 +2,6 @@
 #include "InventoryManager.h"   
 
 
-
-// Creates one item line with nothing delivered yet.
 OrderItem::OrderItem(string productId, int quantity) {
     this->productId = productId;
     this->quantity = quantity;
@@ -11,8 +9,6 @@ OrderItem::OrderItem(string productId, int quantity) {
     next = nullptr;
 }
 
-
-// Creates an empty Pending order that is not yet in the queue.
 Order::Order(string orderId, string customerId) {
     this->orderId = orderId;
     this->customerId = customerId;
@@ -33,19 +29,16 @@ Order::~Order() {
     itemHead = nullptr;
 }
 
-
 bool Order::addItem(string productId, int qty) {
     if (qty <= 0) {
         return false;
     }
 
-    
     OrderItem* existing = findItem(productId);
     if (existing != nullptr) {
         existing->quantity += qty;
         return true;
     }
-
     OrderItem* newItem = new OrderItem(productId, qty);
     if (itemHead == nullptr) {
         itemHead = newItem;
@@ -60,8 +53,6 @@ bool Order::addItem(string productId, int qty) {
     return true;
 }
 
-// Linear search of the item list by product ID.
-// Returns the matching item, or nullptr if the product is not in the order.
 OrderItem* Order::findItem(string productId) {
     OrderItem* current = itemHead;
     while (current != nullptr) {
@@ -80,8 +71,6 @@ int Order::remainingQty(const OrderItem* item) const {
     return item->quantity - item->deliveredQty;
 }
 
-// Total weight of everything still to be delivered:
-
 double Order::totalWeight(InventoryManager& inventory) {
     double total = 0.0;
     OrderItem* current = itemHead;
@@ -94,8 +83,6 @@ double Order::totalWeight(InventoryManager& inventory) {
     }
     return total;
 }
-
-// Largest unit weight among items that still have remaining quantity.
 double Order::heaviestUnitWeight(InventoryManager& inventory) {
     double heaviest = 0.0;
     OrderItem* current = itemHead;
@@ -111,8 +98,6 @@ double Order::heaviestUnitWeight(InventoryManager& inventory) {
     return heaviest;
 }
 
-// True only when every item has been fully delivered.
-// An order with no items is NOT treated as delivered.
 bool Order::isFullyDelivered() const {
     if (itemHead == nullptr) {
         return false;
@@ -126,7 +111,6 @@ bool Order::isFullyDelivered() const {
     }
     return true;
 }
-
 
 bool Order::hasAnyDelivery() const {
     OrderItem* current = itemHead;
