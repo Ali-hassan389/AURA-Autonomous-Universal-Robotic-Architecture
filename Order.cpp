@@ -1,7 +1,6 @@
 #include "Order.h"
 #include "InventoryManager.h"   
 
-
 OrderItem::OrderItem(string productId, int quantity) {
     this->productId = productId;
     this->quantity = quantity;
@@ -123,6 +122,7 @@ bool Order::hasAnyDelivery() const {
     return false;
 }
 
+
 void Order::displayOrder() const {
     cout << "Order: " << orderId << " | Customer: " << customerId
         << " | Status: " << orderStatusToText(status);
@@ -136,6 +136,7 @@ void Order::displayOrder() const {
         return;
     }
 
+    
     OrderItem* current = itemHead;
     while (current != nullptr) {
         cout << "    Product: " << current->productId
