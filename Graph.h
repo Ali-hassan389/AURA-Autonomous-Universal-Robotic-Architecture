@@ -24,6 +24,7 @@ public:
 
 class GraphNode {
 public:
+    GraphNode(string id, string name, LocationType type);
 	Location location;
 	Edge* edgeHead;
 	GraphNode* next;
