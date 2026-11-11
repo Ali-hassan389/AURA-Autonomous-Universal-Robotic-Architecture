@@ -97,14 +97,15 @@ public:
 	bool nearestOfType(string fromId, LocationType type, string& nearestId, int& distance);
 
 	// Route validation
-	bool isRouteStillOpen(RouteResult route);
+	bool isRouteStillOpen(const RouteResult& route);
 
-	void displayRoute(RouteResult route);
-
+    void displayRoute(const RouteResult& route);
 	// Getters
 	int getVertexCount() const;
 
 	int getEdgeCount() const;
-
-	void runGraphMenu(Graph& graph, UndoManager& undo);
+    Graph(const Graph&) = delete;
+    Graph& operator=(const Graph&) = delete;
+	
 };
+void runGraphMenu(Graph& graph, UndoManager& undo);
