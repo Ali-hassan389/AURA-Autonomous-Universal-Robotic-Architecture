@@ -5,12 +5,14 @@ QueueNode::QueueNode(Order* order) {
     this->order = order;
     next = nullptr;
 }
+
 // Starts with an empty queue
 OrderQueue::OrderQueue() {
     front = nullptr;
     rear = nullptr;
     size = 0;
 }
+
 // Deletes only the nodes. The orders belong to OrderManager.
 OrderQueue::~OrderQueue() {
     QueueNode* current = front;
