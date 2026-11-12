@@ -5,7 +5,6 @@ QueueNode::QueueNode(Order* order) {
     this->order = order;
     next = nullptr;
 }
-
 // Starts with an empty queue
 OrderQueue::OrderQueue() {
     front = nullptr;
