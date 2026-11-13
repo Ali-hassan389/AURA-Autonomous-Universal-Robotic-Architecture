@@ -7,7 +7,6 @@ OrderManager::OrderManager(InventoryManager& inventory) : inventory(inventory) {
     tail = nullptr;
     orderCount = 0;
 }
-
 // Deletes every order. The queue only has pointers, so it deletes nothing.
 OrderManager::~OrderManager() {
     Order* current = head;
@@ -19,7 +18,6 @@ OrderManager::~OrderManager() {
     head = nullptr;
     tail = nullptr;
 }
-
 // Operation 1: reads lines like OrderID,CustomerID,ProductID,Qty
 bool OrderManager::loadOrders(string file) {
     ifstream in(file);
@@ -154,12 +152,10 @@ int OrderManager::enqueuePendingOrders() {
     }
     return added;
 }
-
 // Operation 6
 void OrderManager::displayPendingQueue() {
     pendingQueue.display();
 }
-
 // Operation 7
 void OrderManager::peekFront() {
     Order* front = pendingQueue.peek();
@@ -170,7 +166,6 @@ void OrderManager::peekFront() {
     front->displayOrder();
     cout << "Queue size: " << pendingQueue.getSize() << endl;
 }
-
 // Operation 8
 bool OrderManager::cancelOrder(string orderId, InventoryManager& inventory, RobotManager& robots) {
     Order* order = findOrder(orderId);
@@ -243,7 +238,6 @@ bool OrderManager::updateStatus(string orderId, OrderStatus newStatus) {
     order->status = newStatus;
     return true;
 }
-
 // Operation 11
 void OrderManager::displayCompletedAndPending() {
     cout << "Completed orders:" << endl;
