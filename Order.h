@@ -1,15 +1,15 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 
 class InventoryManager;
 
 class OrderItem {
 public:
     string productId;
-    int quantity;       
-    int deliveredQty;   
-    OrderItem* next;    
+    int quantity;
+    int deliveredQty;
+    OrderItem* next;
 
     OrderItem(string productId, int quantity);
 };
@@ -18,11 +18,11 @@ class Order {
 public:
     string orderId;
     string customerId;
-    OrderItem* itemHead;       
+    OrderItem* itemHead;
     OrderStatus status;
-    string assignedRobotId;     
-    bool inQueue;             
-    Order* next;              
+    string assignedRobotId;
+    bool inQueue;
+    Order* next;
 
     Order(string orderId, string customerId);
     ~Order();
