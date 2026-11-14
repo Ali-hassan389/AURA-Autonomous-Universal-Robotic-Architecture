@@ -1,5 +1,5 @@
 #pragma once 
-#include "common.h" 
+#include "Common.h" 
 #include "Graph.h" 
 #include "RackRegistry.h" 
 #include "ProductAVL.h" 
@@ -26,7 +26,9 @@ public:
 
     AllocationResult(); 
     ~AllocationResult();
-    AllocationResult(AllocationResult& other); 
+    AllocationResult(const AllocationResult& other);
+    AllocationResult& operator=(const AllocationResult& other);
+
     void addLine(string r, int q); 
 }; 
 
@@ -89,6 +91,8 @@ public:
     bool rackEntryExists(string productId, string rackId); 
     
     int reservedQty(string productId, string rackId); 
+
+    string getRackLocation(string rackId);
 
     void runInventoryMenu(Graph& graph, UndoManager& undo);
 }; 
