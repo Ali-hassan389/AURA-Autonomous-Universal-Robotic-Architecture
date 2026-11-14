@@ -1,6 +1,5 @@
 #include "ProductAVL.h"
 
-
 // Constructor to initialize a new product node.
 ProductNode::ProductNode(string id, string n, double weight, int reorder) {
     productId = id;
@@ -150,6 +149,10 @@ ProductNode* ProductAVL::Delete(string productId, ProductNode* T) {
 
 
             string tempId = temp->productId;
+            deleteRackList(T->rackHead);
+            T->rackHead = NULL;
+
+            T->productId = temp->productId;
             T->name = temp->name;
             T->unitWeight = temp->unitWeight;
             T->reorderLevel = temp->reorderLevel;
@@ -292,6 +295,63 @@ void  ProductAVL::displayTree() {
 
     displayHelper(root, 0);
 }
+
+void ProductAVL::displayLowStockHelper(ProductNode* node) {
+    if (node == NULL) {
+        return;
+    }
+
+    displayLowStockHelper(node->left);
+
+    int availableAmount = 0;
+    RackEntry* currentRack = node->rackHead;
+
+    while (currentRack != NULL) {
+        availableAmount += currentRack->availableQty();
+        currentRack = currentRack->nextRack;
+    }
+
+    if (availableAmount <= node->reorderLevel) {
+        cout << "Product ID: " << node->productId << endl;
+        cout << "Product Name: " << node->name << endl;
+        cout << "Available Quantity: " << availableAmount << endl;
+        cout << "Reorder Level: " << node->reorderLevel << endl;
+        cout << endl;
+    }
+
+    displayLowStockHelper(node->right);
+}
+
+void ProductAVL::displayLowStock() {
+    if (root == NULL) {
+        cout << "No products available" << endl;
+        return;
+    }
+
+    displayLowStockHelper(root);
+}
+
+void ProductAVL::releaseReservationsHelper(ProductNode* node, string orderId) {
+    if (node == NULL) {
+        return;
+    }
+
+    releaseReservationsHelper(node->left, orderId);
+
+    RackEntry* currentRack = node->rackHead;
+
+    while (currentRack != NULL) {
+        currentRack->releaseReservation(orderId);
+        currentRack = currentRack->nextRack;
+    }
+
+    releaseReservationsHelper(node->right, orderId);
+}
+
+void ProductAVL::releaseReservationsForOrder(string orderId) {
+    releaseReservationsHelper(root, orderId);
+}
+
 
 // Prevents memory leaks by deleting the complete tree
 ProductAVL::~ProductAVL() {
