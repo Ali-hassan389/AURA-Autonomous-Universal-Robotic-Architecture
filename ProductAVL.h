@@ -56,6 +56,10 @@ private:
     // Prints the tree sideways, displaying the right subtree above the parent
     void displayHelper(ProductNode* node, int spaces);
 
+    void displayLowStockHelper(ProductNode* node);
+    void releaseReservationsHelper(ProductNode* node, string orderId);
+
+
 public:
     // Initializes an empty AVL tree
     ProductAVL();
@@ -74,6 +78,10 @@ public:
 
     // Displays the AVL tree sideways and the height of every node
     void displayTree();
+
+    void displayLowStock();
+    void releaseReservationsForOrder(string orderId);
+
 
     // Prevents memory leaks by deleting the complete tree
     ~ProductAVL();
