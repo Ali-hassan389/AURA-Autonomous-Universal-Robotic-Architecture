@@ -1,5 +1,4 @@
 #include "OrderQueue.h"
-
 // Creates a node that points to the given order
 QueueNode::QueueNode(Order* order) {
     this->order = order;
@@ -11,7 +10,6 @@ OrderQueue::OrderQueue() {
     rear = nullptr;
     size = 0;
 }
-
 // Deletes only the nodes. The orders belong to OrderManager.
 OrderQueue::~OrderQueue() {
     QueueNode* current = front;
