@@ -1,12 +1,11 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 #include "Order.h"
 #include "OrderQueue.h"
 #include "InventoryManager.h"
 
 class RobotManager;
-
 // Owns every order (main linked list) and the queue of pending orders.
 // The queue only points to orders, so the orders are deleted here.
 class OrderManager {
@@ -24,7 +23,7 @@ public:
     OrderManager(const OrderManager&) = delete;
     OrderManager& operator=(const OrderManager&) = delete;
 
-    void loadOrders();
+    bool loadOrders(string file);
     bool addOrder(string orderId, string customerId);
     bool addItemToOrder(string orderId, string productId, int qty);
     Order* findOrder(string orderId);
