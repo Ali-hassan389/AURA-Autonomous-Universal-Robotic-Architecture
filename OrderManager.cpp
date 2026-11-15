@@ -42,6 +42,15 @@ bool OrderManager::loadOrders(string file) {
             continue;
         }
 
+        string cleanOrderId = toUpperCase(trimText(fields[0]));
+        string cleanCustomerId = toUpperCase(trimText(fields[1]));
+        string cleanProductId = toUpperCase(trimText(fields[2]));
+
+        if (cleanOrderId.empty() || cleanCustomerId.empty() || cleanProductId.empty()) {
+            cout << "Warning line " << lineNumber << ": empty identifier." << endl;
+            continue;
+        }
+
         // quantity must be only digits and above 0
         bool digitsOnly = (fields[3] != "");
         for (int i = 0; i < (int)fields[3].length(); i++) {
@@ -55,22 +64,22 @@ bool OrderManager::loadOrders(string file) {
         }
         int qty = stoi(fields[3]);
 
-        if (!inventory.productExists(fields[2])) {
-            cout << "Warning line " << lineNumber << ": unknown product " << fields[2] << endl;
+        if (!inventory.productExists(cleanProductId)) {
+            cout << "Warning line " << lineNumber << ": unknown product " << cleanProductId << endl;
             continue;
         }
 
         // create the order the first time we see its ID
-        Order* order = findOrder(fields[0]);
+        Order* order = findOrder(cleanOrderId);
         if (order == nullptr) {
-            addOrder(fields[0], fields[1]);
-            order = findOrder(fields[0]);
+            addOrder(cleanOrderId, cleanCustomerId);
+            order = findOrder(cleanOrderId);
         }
         if (order == nullptr || order->status != Order_Pending) {
             continue;
         }
 
-        order->addItem(fields[2], qty);
+        order->addItem(cleanProductId, qty);
 
         // queue it once it has its first item, so queue order = file order
         if (!order->inQueue) {
@@ -83,16 +92,19 @@ bool OrderManager::loadOrders(string file) {
 
 // Operation 2: new empty Pending order, not in the queue yet
 bool OrderManager::addOrder(string orderId, string customerId) {
-    if (orderId == "" || customerId == "") {
+    string cleanOrderId = toUpperCase(trimText(orderId));
+    string cleanCustomerId = toUpperCase(trimText(customerId));
+
+    if (cleanOrderId == "" || cleanCustomerId == "") {
         cout << "Order ID and customer ID cannot be empty." << endl;
         return false;
     }
-    if (findOrder(orderId) != nullptr) {
-        cout << "Order " << orderId << " already exists." << endl;
+    if (findOrder(cleanOrderId) != nullptr) {
+        cout << "Order " << cleanOrderId << " already exists." << endl;
         return false;
     }
 
-    Order* order = new Order(orderId, customerId);
+    Order* order = new Order(cleanOrderId, cleanCustomerId);
     if (head == nullptr) {
         head = order;
         tail = order;
@@ -107,31 +119,34 @@ bool OrderManager::addOrder(string orderId, string customerId) {
 
 // Operation 3
 bool OrderManager::addItemToOrder(string orderId, string productId, int qty) {
-    Order* order = findOrder(orderId);
+    string cleanOrderId = toUpperCase(trimText(orderId));
+    string cleanProductId = toUpperCase(trimText(productId));
+    Order* order = findOrder(cleanOrderId);
     if (order == nullptr) {
-        cout << "Order " << orderId << " does not exist." << endl;
+        cout << "Order " << cleanOrderId << " does not exist." << endl;
         return false;
     }
     if (order->status != Order_Pending) {
         cout << "Items can only be added to a Pending order." << endl;
         return false;
     }
-    if (!inventory.productExists(productId)) {
-        cout << "Product " << productId << " does not exist." << endl;
+    if (!inventory.productExists(cleanProductId)) {
+        cout << "Product " << cleanProductId << " does not exist." << endl;
         return false;
     }
     if (qty <= 0) {
         cout << "Quantity must be above 0." << endl;
         return false;
     }
-    return order->addItem(productId, qty);
+    return order->addItem(cleanProductId, qty);
 }
 
 // Operation 4
 Order* OrderManager::findOrder(string orderId) {
+    string cleanOrderId = toUpperCase(trimText(orderId));
     Order* current = head;
     while (current != nullptr) {
-        if (current->orderId == orderId) {
+        if (current->orderId == cleanOrderId) {
             return current;
         }
         current = current->next;
