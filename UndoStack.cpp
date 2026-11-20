@@ -1,10 +1,7 @@
 #include "UndoStack.h"
 
 using namespace std;
-
-
-// ==================== UNDO RECORD ====================
-
+// Initialize fields for the record variants and clear the link pointer.
 // Every field starts with a safe default value
 UndoRecord::UndoRecord()
 {
@@ -26,7 +23,7 @@ UndoRecord::UndoRecord()
 }
 
 
-// ==================== UNDO STACK ====================
+// UNDO STACK 
 
 UndoStack::UndoStack()
 	: top(nullptr), size(0)
@@ -59,7 +56,7 @@ void UndoStack::push(UndoRecord* record)
 }
 
 
-// ==================== POP ====================
+//  POP 
 
 // Unlinks the top record and hands it to the caller.
 // The caller is responsible for deleting it.
@@ -78,15 +75,16 @@ UndoRecord* UndoStack::pop()
 }
 
 
-// ==================== PEEK ====================
+// PEEK 
 
+// Return the top pointer without changing stack contents.
 UndoRecord* UndoStack::peek() const
 {
 	return top;
 }
 
 
-// ==================== ACCESSORS ====================
+// = ACCESSORS 
 
 bool UndoStack::isEmpty() const
 {
