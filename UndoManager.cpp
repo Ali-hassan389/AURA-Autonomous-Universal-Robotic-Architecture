@@ -1,4 +1,3 @@
-
 #include "UndoManager.h"
 
 #include <iostream>
@@ -6,16 +5,16 @@
 using namespace std;
 
 
+// Keep references to the collaborating warehouse subsystems and initialize empty history.
 // Constructor
-UndoManager::UndoManager(Graph& warehouseGraph,
-	InventoryManager& inventoryManager,
-	RobotManager& robotManager)
+UndoManager::UndoManager(Graph& warehouseGraph,InventoryManager& inventoryManager,RobotManager& robotManager)
 	: graph(warehouseGraph),
 	inventory(inventoryManager),
 	robots(robotManager) {
 }
 
 
+// Store the values needed to restore a manual quantity change.
 // Record a manual quantity update
 void UndoManager::recordQuantityUpdate(
 	const string& productId,
@@ -37,6 +36,7 @@ void UndoManager::recordQuantityUpdate(
 }
 
 
+// Store the pathway endpoints and the status that preceded the block.
 // Record a blocked pathway
 void UndoManager::recordBlock(
 	const string& pathA,
@@ -56,6 +56,7 @@ void UndoManager::recordBlock(
 }
 
 
+// Store the robot ID and its previous status for a potential restoration.
 // Record a robot maintenance change
 void UndoManager::recordMaintenance(
 	const string& robotId,
@@ -115,6 +116,7 @@ void UndoManager::displayMostRecent() {
 }
 
 
+// Validate and restore the top record; failed validations generally leave it in history.
 // Undo the most recent action
 bool UndoManager::undoLast() {
 
@@ -125,6 +127,7 @@ bool UndoManager::undoLast() {
 
 	UndoRecord* record = history.peek();
 
+	// Quantity undo verifies the rack and reservation constraints before restoring the old value.
 	// CASE 1: Quantity update
 	if (record->type == QTY_UPDATE) {
 
@@ -166,6 +169,7 @@ bool UndoManager::undoLast() {
 	}
 
 
+	// Pathway undo attempts the saved status restoration; this branch consumes the record either way.
 	// CASE 2: Blocked pathway
 	else if (record->type == PATH_BLOCK) {
 
@@ -190,6 +194,7 @@ bool UndoManager::undoLast() {
 	}
 
 
+	// Robot undo requires an existing robot that is not in one of the listed active states.
 	// CASE 3: Robot maintenance
 	else if (record->type == ROBOT_MAINTENANCE) {
 
@@ -258,6 +263,7 @@ bool UndoManager::isEmpty() const {
 }
 
 
+// Interactive console menu for viewing, undoing, or discarding the top history entry.
 // Undo menu
 void runUndoMenu(UndoManager& undo) {
 
