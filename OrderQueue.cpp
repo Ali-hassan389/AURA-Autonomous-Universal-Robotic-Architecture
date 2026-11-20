@@ -1,4 +1,6 @@
 #include "OrderQueue.h"
+
+// A queue node stores a non-owning pointer to an order and a link to the next node.
 // Creates a node that points to the given order
 QueueNode::QueueNode(Order* order) {
     this->order = order;
@@ -10,6 +12,7 @@ OrderQueue::OrderQueue() {
     rear = nullptr;
     size = 0;
 }
+
 // Deletes only the nodes. The orders belong to OrderManager.
 OrderQueue::~OrderQueue() {
     QueueNode* current = front;
@@ -29,6 +32,7 @@ void OrderQueue::enqueue(Order* order) {
         return;
     }
 
+    // Link the new node as both endpoints for the empty case, otherwise append it.
     QueueNode* newNode = new QueueNode(order);
     if (rear == nullptr) {
         // queue was empty, so the new node is both front and rear
@@ -49,6 +53,7 @@ Order* OrderQueue::dequeue() {
         return nullptr;
     }
 
+    // Save the returned order, unlink and delete only its queue node.
     QueueNode* oldFront = front;
     Order* result = oldFront->order;
 
@@ -75,11 +80,13 @@ Order* OrderQueue::peek() const {
 // Finds an order by ID anywhere in the queue and unlinks it. O(n).
 // Returns true if it was found and removed.
 bool OrderQueue::removeById(string orderId) {
+    // Normalize the requested ID, then scan while tracking the predecessor for unlinking.
+    string cleanOrderId = toUpperCase(trimText(orderId));
     QueueNode* previous = nullptr;
     QueueNode* current = front;
 
     while (current != nullptr) {
-        if (current->order->orderId == orderId) {
+        if (current->order->orderId == cleanOrderId) {
             if (previous == nullptr) {
                 // removing the front node
                 front = current->next;
@@ -122,6 +129,7 @@ void OrderQueue::pushFront(Order* order) {
 
 // Unlinks every order whose status is Cancelled. Returns how many were removed.
 int OrderQueue::removeCancelled() {
+    // Track the predecessor while removing matching nodes; retain it when a node is deleted.
     int removed = 0;
     QueueNode* previous = nullptr;
     QueueNode* current = front;
@@ -160,6 +168,7 @@ void OrderQueue::display() const {
         return;
     }
 
+    // Traverse in FIFO order and delegate each order’s printed details to Order.
     cout << "Pending orders (" << size << "), front to rear:" << endl;
     QueueNode* current = front;
     int position = 1;
