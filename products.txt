@@ -1,0 +1,9 @@
+# PRODUCT_ID,PRODUCT_NAME,UNIT_WEIGHT_KG,REORDER_LEVEL
+DAIRY01,Dairy Milk Chocolate,0.10,20
+LAYS01,Lays Masala Family Pack,0.15,25
+ROOH01,Rooh Afza Syrup,0.80,15
+SHAN01,Shan Biryani Masala,0.10,20
+TAPAL01,Tapal Danedar Tea,0.45,15
+MILK01,Nestle Milkpak,1.00,20
+SURF01,Surf Excel Detergent,1.00,10
+KURK01,Kurkure Chutney Pack,0.08,30

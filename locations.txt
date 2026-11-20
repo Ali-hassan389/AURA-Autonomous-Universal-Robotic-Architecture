@@ -1,0 +1,11 @@
+# ID,TYPE,NAME
+W01,RACK,Main Warehouse Receiving Area
+R01,RACK,Dairy and Milk Rack
+R02,RACK,Snacks Rack
+R03,RACK,Drinks Rack
+R04,RACK,Grocery Rack
+R05,RACK,Tea and Masala Rack
+R06,RACK,Household Rack
+P01,PACKING,Lahore Packing Station
+P02,PACKING,Karachi Packing Station
+C01,CHARGING,Main Charging Station
