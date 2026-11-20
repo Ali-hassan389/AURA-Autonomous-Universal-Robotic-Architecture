@@ -7,57 +7,45 @@
 #include "PlanManager.h"
 #include "RobotManager.h"
 
+// Execution interface for running and managing assigned warehouse picking plans.
 // Executes the picking plans made by PlanManager, one trip at a time.
-// Every trip follows "validate first, then apply".
-// This class owns no memory, it only changes data owned by other managers.
+// Every trip follows validate first, then apply.
+// This class owns no memory; it changes data owned by other managers.
 class ExecutionManager {
 private:
-	PlanManager& planner;
-	Graph& graph;
-	InventoryManager& inventory;
-	OrderManager& orders;
-	RobotManager& robots;
+    // Non-owning references to the managers and graph used during execution.
+    PlanManager& planner;
+    Graph& graph;
+    InventoryManager& inventory;
+    OrderManager& orders;
+    RobotManager& robots;
 
-	// Prints the plan for one order with the next trip in detail
-	void displayPlanForExecution(PickingPlan* plan);
-
-	// Called after the last trip: frees the robot and discards the plan
-	void finishOrderIfDone(const string& orderId);
+    // Private presentation/helper operations used by the task menu.
+    void displayPlanForExecution(PickingPlan* plan);
+    void finishOrderIfDone(const string& orderId);
 
 public:
-	ExecutionManager(PlanManager& planManager,
-		Graph& warehouseGraph,
-		InventoryManager& inventoryManager,
-		OrderManager& orderManager,
-		RobotManager& robotManager);
+    ExecutionManager(PlanManager& planManager,
+                     Graph& warehouseGraph,
+                     InventoryManager& inventoryManager,
+                     OrderManager& orderManager,
+                     RobotManager& robotManager);
 
-	// Prevent copying because this class stores references
-	ExecutionManager(const ExecutionManager&) = delete;
-	ExecutionManager& operator=(const ExecutionManager&) = delete;
+    // Prevent copying a manager that holds references to shared system state.
+    ExecutionManager(const ExecutionManager&) = delete;
+    ExecutionManager& operator=(const ExecutionManager&) = delete;
 
-	// Lists every order that has an active plan, returns how many
-	int displayAssignedOrders();
-
-	// Screen for one order: execute, recalculate, cancel or leave
-	void executeTaskMenu(const string& orderId);
-
-	// First trip of the plan that is not executed yet
-	PlanTrip* getNextTrip(PickingPlan* plan);
-
-	// Read-only checks, changes nothing
-	bool validateTrip(Order* order, Robot* robot,
-		PlanTrip* trip, string& reason);
-
-	// Validates, then collects, moves the robot and records delivery
-	bool executeTrip(const string& orderId);
-
-	// Recomputes the routes of the unexecuted trips
-	bool recalculateRoute(const string& orderId);
-
-	// Releases reservations and robot, order goes back to the queue
-	bool cancelAssignment(const string& orderId);
+    // Show active plans; return the number displayed.
+    int displayAssignedOrders();
+    void executeTaskMenu(const string& orderId);
+    PlanTrip* getNextTrip(PickingPlan* plan);
+    // Validate preconditions and return the first failure explanation via reason.
+    bool validateTrip(Order* order, Robot* robot,
+                      PlanTrip* trip, string& reason);
+    bool executeTrip(const string& orderId);
+    bool recalculateRoute(const string& orderId);
+    bool cancelAssignment(const string& orderId);
 };
 
-
-// Menu is a free function, not a class member
-void runExecutionMenu(ExecutionManager& executor); #pragma once
+// Entry point for the interactive execution menu.
+void runExecutionMenu(ExecutionManager& executor);
