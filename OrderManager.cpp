@@ -2,6 +2,7 @@
 #include "RobotManager.h"
 #include <fstream>
 
+// Retain the supplied inventory reference and initialize the order list and count.
 OrderManager::OrderManager(InventoryManager& inventory) : inventory(inventory) {
     head = nullptr;
     tail = nullptr;
@@ -19,6 +20,7 @@ OrderManager::~OrderManager() {
     tail = nullptr;
 }
 // Operation 1: reads lines like OrderID,CustomerID,ProductID,Qty
+// Load comma-separated order lines; invalid rows are reported and skipped.
 bool OrderManager::loadOrders(string file) {
     ifstream in(file);
     if (!in.is_open()) {
@@ -91,6 +93,7 @@ bool OrderManager::loadOrders(string file) {
 }
 
 // Operation 2: new empty Pending order, not in the queue yet
+// Create an empty Pending order and append it to the manager-owned list.
 bool OrderManager::addOrder(string orderId, string customerId) {
     string cleanOrderId = toUpperCase(trimText(orderId));
     string cleanCustomerId = toUpperCase(trimText(customerId));
@@ -118,6 +121,7 @@ bool OrderManager::addOrder(string orderId, string customerId) {
 }
 
 // Operation 3
+// Validate order state, product existence, and quantity before adding a line.
 bool OrderManager::addItemToOrder(string orderId, string productId, int qty) {
     string cleanOrderId = toUpperCase(trimText(orderId));
     string cleanProductId = toUpperCase(trimText(productId));
@@ -142,6 +146,7 @@ bool OrderManager::addItemToOrder(string orderId, string productId, int qty) {
 }
 
 // Operation 4
+// Search the main order list by normalized ID.
 Order* OrderManager::findOrder(string orderId) {
     string cleanOrderId = toUpperCase(trimText(orderId));
     Order* current = head;
@@ -155,6 +160,7 @@ Order* OrderManager::findOrder(string orderId) {
 }
 
 // Operation 5: queues every Pending order that has items and is not queued yet
+// Queue eligible orders and return the number newly enqueued.
 int OrderManager::enqueuePendingOrders() {
     int added = 0;
     Order* current = head;
@@ -168,10 +174,12 @@ int OrderManager::enqueuePendingOrders() {
     return added;
 }
 // Operation 6
+// Delegate display of queued orders to the queue object.
 void OrderManager::displayPendingQueue() {
     pendingQueue.display();
 }
 // Operation 7
+// Display the front order and queue size, or report an empty queue.
 void OrderManager::peekFront() {
     Order* front = pendingQueue.peek();
     if (front == nullptr) {
@@ -182,6 +190,7 @@ void OrderManager::peekFront() {
     cout << "Queue size: " << pendingQueue.getSize() << endl;
 }
 // Operation 8
+// Cancel an eligible order, freeing associated resources where applicable.
 bool OrderManager::cancelOrder(string orderId, InventoryManager& inventory, RobotManager& robots) {
     Order* order = findOrder(orderId);
     if (order == nullptr) {
@@ -216,11 +225,13 @@ bool OrderManager::cancelOrder(string orderId, InventoryManager& inventory, Robo
 }
 
 // Operation 9
+// Remove cancelled entries from the pending queue and return the removal count.
 int OrderManager::removeCancelledFromQueue() {
     return pendingQueue.removeCancelled();
 }
 
 // Operation 10: only legal moves are allowed
+// Allow only the status transitions encoded below; reject other transitions.
 bool OrderManager::updateStatus(string orderId, OrderStatus newStatus) {
     Order* order = findOrder(orderId);
     if (order == nullptr) {
@@ -254,6 +265,7 @@ bool OrderManager::updateStatus(string orderId, OrderStatus newStatus) {
     return true;
 }
 // Operation 11
+// Print completed orders followed by pending orders, with an empty marker per section.
 void OrderManager::displayCompletedAndPending() {
     cout << "Completed orders:" << endl;
     Order* current = head;
@@ -284,6 +296,7 @@ void OrderManager::displayCompletedAndPending() {
     }
 }
 
+// Print every order in the main list, or indicate that the list is empty.
 void OrderManager::displayAllOrders() {
     if (head == nullptr) {
         cout << "No orders." << endl;
@@ -296,15 +309,18 @@ void OrderManager::displayAllOrders() {
     }
 }
 
+// Expose the first order pointer for traversal by callers.
 Order* OrderManager::getHead() {
     return head;
 }
 
+// Expose the pending queue by reference.
 OrderQueue& OrderManager::getQueue() {
     return pendingQueue;
 }
 
 // Menu
+// Console menu for loading, editing, querying, and displaying orders.
 void runOrderMenu(OrderManager& orders, InventoryManager& inventory, RobotManager& robots) {
     while (true) {
         cout << "\n===== ORDER MENU =====" << endl;
