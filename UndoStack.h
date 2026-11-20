@@ -2,66 +2,55 @@
 
 #include "Common.h"
 
-// The three administrative actions that can be undone
+// The three administrative actions that can be undone.
 enum UndoType {
-	QTY_UPDATE,
-	PATH_BLOCK,
-	ROBOT_MAINTENANCE
+    QTY_UPDATE,
+    PATH_BLOCK,
+    ROBOT_MAINTENANCE
 };
 
-
-// One node of the undo stack. Only the fields that belong to the
-// record's type are used, the rest keep their default values.
+// One history entry; fields are used according to its UndoType discriminator.
 class UndoRecord {
 public:
-	UndoType type;
+    UndoType type;
 
-	// Manual quantity update
-	string productId;
-	string rackId;
-	int oldQty;
-	int newQty;
+    // Quantity-update payload.
+    string productId;
+    string rackId;
+    int oldQty;
+    int newQty;
 
-	// Blocked pathway
-	string pathA;
-	string pathB;
-	PathStatus oldPathStatus;
+    // Pathway-block payload.
+    string pathA;
+    string pathB;
+    PathStatus oldPathStatus;
 
-	// Robot maintenance change
-	string robotId;
-	RobotStatus oldRobotStatus;
+    // Robot-maintenance payload.
+    string robotId;
+    RobotStatus oldRobotStatus;
 
-	// Record below this one on the stack
-	UndoRecord* next;
+    UndoRecord* next;
 
-	UndoRecord();
+    UndoRecord();
 };
 
-
-// Stack implemented as a singly linked list with a top pointer.
-// push, pop and peek are all O(1).
+// Singly linked LIFO stack. push, pop, and peek are O(1).
 class UndoStack {
 private:
-	UndoRecord* top;
-	int size;
+    UndoRecord* top;
+    int size;
 
 public:
-	UndoStack();
-	~UndoStack();
+    UndoStack();
+    ~UndoStack();
 
-	// Prevent shallow copying of the linked list
-	UndoStack(const UndoStack&) = delete;
-	UndoStack& operator=(const UndoStack&) = delete;
+    UndoStack(const UndoStack&) = delete;
+    UndoStack& operator=(const UndoStack&) = delete;
 
-	// Puts a record on top of the stack
-	void push(UndoRecord* record);
-
-	// Unlinks the top record and returns it, the caller deletes it
-	UndoRecord* pop();
-
-	// Returns the top record without removing it
-	UndoRecord* peek() const;
-
-	bool isEmpty() const;
-	int getSize() const;
+    // Stack operations: push links a record, pop transfers the top pointer, peek observes it.
+    void push(UndoRecord* record);
+    UndoRecord* pop();
+    UndoRecord* peek() const;
+    bool isEmpty() const;
+    int getSize() const;
 };
