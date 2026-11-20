@@ -4,11 +4,11 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-
 using namespace std;
 
 
 // Turns a number into text with one decimal, used to build reason strings
+// Formats diagnostic numeric values consistently for messages.
 static string numberToText(double value)
 {
 	ostringstream stream;
@@ -17,8 +17,9 @@ static string numberToText(double value)
 }
 
 
-// ==================== CONSTRUCTOR ====================
+//  CONSTRUCTOR 
 
+// Retain references to the managers that own the plan and warehouse state.
 ExecutionManager::ExecutionManager(PlanManager& planManager,
 	Graph& warehouseGraph,
 	InventoryManager& inventoryManager,
@@ -32,7 +33,7 @@ ExecutionManager::ExecutionManager(PlanManager& planManager,
 }
 
 
-// ==================== NEXT TRIP ====================
+// NEXT TRIP
 
 // Walks the trip list and returns the first trip that is not executed.
 // Returns nullptr when every trip is done.
@@ -55,10 +56,11 @@ PlanTrip* ExecutionManager::getNextTrip(PickingPlan* plan)
 }
 
 
-// ==================== DISPLAY ASSIGNED ORDERS ====================
+//  DISPLAY ASSIGNED ORDERS 
 
 // Shows every active plan with its order status and progress.
 // Returns the number of plans shown.
+// Lists active plans and counts executed trips for each assigned order.
 int ExecutionManager::displayAssignedOrders()
 {
 	PickingPlan* plan = planner.getActiveHead();
@@ -99,9 +101,10 @@ int ExecutionManager::displayAssignedOrders()
 }
 
 
-// ==================== DISPLAY PLAN FOR EXECUTION ====================
+//DISPLAY PLAN FOR EXECUTION 
 
 // Prints the progress of every trip, then the next trip in detail
+// Displays robot state, trip progress, and details of the next pending trip.
 void ExecutionManager::displayPlanForExecution(PickingPlan* plan)
 {
 	if (plan == nullptr)
@@ -170,6 +173,7 @@ void ExecutionManager::displayPlanForExecution(PickingPlan* plan)
 
 // Read-only checks that run before anything is changed.
 // Returns false and fills reason on the first failure.
+// Checks trip preconditions without mutating inventory, robot, order, or plan state.
 bool ExecutionManager::validateTrip(Order* order, Robot* robot,
 	PlanTrip* trip, string& reason)
 {
@@ -270,6 +274,7 @@ bool ExecutionManager::validateTrip(Order* order, Robot* robot,
 // ==================== EXECUTE TRIP ====================
 
 // Validates the next trip, then applies it step by step
+// Executes the first pending trip for an order after validation succeeds.
 bool ExecutionManager::executeTrip(const string& orderId)
 {
 	string cleanOrderId = toUpperCase(trimText(orderId));
@@ -418,6 +423,7 @@ void ExecutionManager::finishOrderIfDone(const string& orderId)
 // Re-runs Dijkstra between the same stops for every unexecuted trip.
 // All legs are checked first, so the plan is only changed when every
 // leg still has a route.
+// Recomputes routes for remaining trips and updates their distance/battery totals.
 bool ExecutionManager::recalculateRoute(const string& orderId)
 {
 	string cleanOrderId = toUpperCase(trimText(orderId));
@@ -544,6 +550,7 @@ bool ExecutionManager::recalculateRoute(const string& orderId)
 
 // Undoes the assignment so the order can be planned again.
 // Already delivered items stay delivered.
+// Releases an active assignment and returns the order to the pending queue.
 bool ExecutionManager::cancelAssignment(const string& orderId)
 {
 	string cleanOrderId = toUpperCase(trimText(orderId));
@@ -598,6 +605,7 @@ bool ExecutionManager::cancelAssignment(const string& orderId)
 // ==================== EXECUTE TASK MENU ====================
 
 // Screen for one order. Loops until the user leaves or the plan is gone.
+// Interactive loop for executing, rerouting, or cancelling one assigned order.
 void ExecutionManager::executeTaskMenu(const string& orderId)
 {
 	string cleanOrderId = toUpperCase(trimText(orderId));
@@ -647,6 +655,7 @@ void ExecutionManager::executeTaskMenu(const string& orderId)
 
 // ==================== EXECUTION MENU ====================
 
+// Top-level menu: select an assigned order, or return when none remain.
 void runExecutionMenu(ExecutionManager& executor)
 {
 	while (true)
