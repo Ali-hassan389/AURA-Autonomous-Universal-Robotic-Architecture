@@ -1,6 +1,7 @@
 #include "Order.h"
 #include "InventoryManager.h"
 
+// Initialize one product line; normalize its identifier and start delivered quantity at zero.
 OrderItem::OrderItem(string productId, int quantity) {
     this->productId = toUpperCase(trimText(productId));
     this->quantity = quantity;
@@ -8,6 +9,7 @@ OrderItem::OrderItem(string productId, int quantity) {
     next = nullptr;
 }
 
+// Initialize an empty pending order and normalize its order and customer identifiers.
 Order::Order(string orderId, string customerId) {
     this->orderId = toUpperCase(trimText(orderId));
     this->customerId = toUpperCase(trimText(customerId));
@@ -18,6 +20,7 @@ Order::Order(string orderId, string customerId) {
     next = nullptr;
 }
 
+// Release the linked list of item records owned by this order.
 Order::~Order() {
     OrderItem* current = itemHead;
 
@@ -30,6 +33,7 @@ Order::~Order() {
     itemHead = nullptr;
 }
 
+// Add a positive quantity, accumulating it into an existing product line when present.
 bool Order::addItem(string productId, int qty) {
     string cleanProductId = toUpperCase(trimText(productId));
 
@@ -58,6 +62,7 @@ bool Order::addItem(string productId, int qty) {
     return true;
 }
 
+// Search item lines by normalized product identifier; return nullptr if absent.
 OrderItem* Order::findItem(string productId) {
     string cleanProductId = toUpperCase(trimText(productId));
     OrderItem* current = itemHead;
@@ -71,6 +76,7 @@ OrderItem* Order::findItem(string productId) {
     return nullptr;
 }
 
+// Return undelivered quantity, clamped to zero; a null item contributes nothing.
 int Order::remainingQty(const OrderItem* item) const {
     if (item == nullptr) {
         return 0;
@@ -79,6 +85,7 @@ int Order::remainingQty(const OrderItem* item) const {
     return remaining > 0 ? remaining : 0;
 }
 
+// Sum remaining quantities multiplied by unit weights obtained from inventory.
 double Order::totalWeight(InventoryManager& inventory) {
     double total = 0.0;
     OrderItem* current = itemHead;
@@ -97,6 +104,7 @@ double Order::totalWeight(InventoryManager& inventory) {
     return total;
 }
 
+// Find the largest unit weight among lines with remaining quantity.
 double Order::heaviestUnitWeight(InventoryManager& inventory) {
     double heaviest = 0.0;
     OrderItem* current = itemHead;
@@ -116,6 +124,7 @@ double Order::heaviestUnitWeight(InventoryManager& inventory) {
     return heaviest;
 }
 
+// An empty order is not considered fully delivered; otherwise check every line.
 bool Order::isFullyDelivered() const {
     if (itemHead == nullptr) {
         return false;
@@ -134,6 +143,7 @@ bool Order::isFullyDelivered() const {
     return true;
 }
 
+// Report whether any item line has a positive delivered quantity.
 bool Order::hasAnyDelivery() const {
     OrderItem* current = itemHead;
 
@@ -148,6 +158,7 @@ bool Order::hasAnyDelivery() const {
     return false;
 }
 
+// Print the order summary and each item line to standard output.
 void Order::displayOrder() const {
     cout << "Order: " << orderId
          << " | Customer: " << customerId
