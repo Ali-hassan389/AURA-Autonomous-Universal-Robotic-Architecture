@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "UndoStack.h"
@@ -6,44 +5,41 @@
 #include "InventoryManager.h"
 #include "RobotManager.h"
 
+// Owns the undo stack and borrows subsystem managers used to restore recorded state.
 class UndoManager {
 private:
-	UndoStack history;
-
-	Graph& graph;
-	InventoryManager& inventory;
-	RobotManager& robots;
+    UndoStack history;
+    Graph& graph;
+    InventoryManager& inventory;
+    RobotManager& robots;
 
 public:
-	UndoManager(Graph& warehouseGraph,
-		InventoryManager& inventoryManager,
-		RobotManager& robotManager);
+    UndoManager(Graph& warehouseGraph,
+                InventoryManager& inventoryManager,
+                RobotManager& robotManager);
 
-	// Prevent copying because this class stores references
-	UndoManager(const UndoManager&) = delete;
-	UndoManager& operator=(const UndoManager&) = delete;
+    UndoManager(const UndoManager&) = delete;
+    UndoManager& operator=(const UndoManager&) = delete;
 
-	// Record reversible operations
-	void recordQuantityUpdate(const string& productId,
-		const string& rackId,
-		int oldQty,
-		int newQty);
+    // Recording methods save the prior values needed by undoLast().
+    void recordQuantityUpdate(const string& productId,
+                              const string& rackId,
+                              int oldQty,
+                              int newQty);
 
-	void recordBlock(const string& pathA,
-		const string& pathB,
-		PathStatus oldStatus);
+    void recordBlock(const string& pathA,
+                     const string& pathB,
+                     PathStatus oldStatus);
 
-	void recordMaintenance(const string& robotId,
-		RobotStatus oldStatus);
+    void recordMaintenance(const string& robotId,
+                           RobotStatus oldStatus);
 
-	// History operations
-	void displayMostRecent();
-	bool undoLast();
-	bool discardTop();
-
-	bool isEmpty() const;
+    // Inspect history, undo its top entry, discard it, or query whether history is empty.
+    void displayMostRecent();
+    bool undoLast();
+    bool discardTop();
+    bool isEmpty() const;
 };
 
+// Run the history/undo console interface until the user chooses Back.
 void runUndoMenu(UndoManager& undo);
-
-
