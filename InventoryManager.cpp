@@ -3,31 +3,31 @@
 #include <iostream> 
 #include <fstream> 
 
-// AllocationLine Constructor 
-AllocationLine::AllocationLine(string r, int q) { 
-    rackId = r; 
+// Creates a single allocation entry saying "grab q units from rack r"
+AllocationLine::AllocationLine(string r, int q) {
+    rackId = r;
     quantity = q;
-    next = NULL; 
+    next = NULL;
 }
 
-//AllocationResult Constructor 
-AllocationResult::AllocationResult() { 
-    lineHead = NULL; 
-    totalAllocated = 0; 
-    shortage = false; 
+// Starts off an empty allocation result with 0 items allocated and no shortage flag
+AllocationResult::AllocationResult() {
+    lineHead = NULL;
+    totalAllocated = 0;
+    shortage = false;
 }
 
-// AllocationResult Destructor
-AllocationResult::~AllocationResult() { 
-    AllocationLine* current = lineHead; 
-    while (current != NULL) { 
-        AllocationLine* temp = current; 
-        current = current->next; 
-        delete temp; 
-    } 
-} 
+// Cleans up all the dynamically allocated AllocationLine nodes so memory doesn't leak
+AllocationResult::~AllocationResult() {
+    AllocationLine* current = lineHead;
+    while (current != NULL) {
+        AllocationLine* temp = current;
+        current = current->next;
+        delete temp;
+    }
+}
 
-// Copy Constructor using deep copy
+// Makes a brand-new, independent copy of another AllocationResult (deep copy)
 AllocationResult::AllocationResult(const AllocationResult& other) {
     lineHead = NULL;
     totalAllocated = 0;
@@ -41,7 +41,7 @@ AllocationResult::AllocationResult(const AllocationResult& other) {
     }
 }
 
-// overloaded the assignment operator for assignment 
+// Safely overwrites an existing AllocationResult with another one (deletes old nodes first, then copies new ones)
 AllocationResult& AllocationResult::operator=(const AllocationResult& other) {
     if (this == &other) {
         return *this;
@@ -69,8 +69,7 @@ AllocationResult& AllocationResult::operator=(const AllocationResult& other) {
     return *this;
 }
 
-
-// insert function for AllocationResult
+// Adds a new rack pickup line to the end of the AllocationResult list and updates the total count
 void AllocationResult::addLine(string r, int q) {
     if (q <= 0) {
         return;
@@ -89,239 +88,252 @@ void AllocationResult::addLine(string r, int q) {
     totalAllocated += q;
 }
 
-
-// InventoryManager Constructor 
+// Sets up the InventoryManager by linking it to the warehouse's RackRegistry
 InventoryManager::InventoryManager(RackRegistry& R) : racks(R) {
-} 
-// loads products from products.txt
-bool InventoryManager::loadProducts(string file) { 
-    ifstream read(file); 
-    if (!read.is_open()) 
-        return false; 
-    string line; 
-    while (getline(read, line)) { 
-        line = trimText(line);
-        if (line.empty() || line[0] == '#') 
-            continue; 
-        string fields[Max_Fields];
-        int count = splitLine(line, ',', fields, Max_Fields); 
-        if (count == 4) {
-            // stoi convers string to integer and stod converts string to double
-            insertProduct(fields[0], fields[1], stod(fields[2]), stoi(fields[3])); 
-        } 
-    } 
-    read.close();
-    return true; 
 }
 
-// loads inventory from Inventory.txt
-bool InventoryManager::loadInventory(string file) { 
-    ifstream read(file); 
+// Reads product details (ID, name, weight, reorder level) from a text file and adds them to the product tree
+bool InventoryManager::loadProducts(string file) {
+    ifstream read(file);
     if (!read.is_open())
-        return false; 
-    string line; 
-    while (getline(read, line)) { 
-        line = trimText(line); 
-        if (line.empty() || line[0] == '#') 
+        return false;
+    string line;
+    while (getline(read, line)) {
+        line = trimText(line);
+        if (line.empty() || line[0] == '#')
             continue;
         string fields[Max_Fields];
-        int count = splitLine(line, ',', fields, Max_Fields); 
-        if (count == 3) { 
-            addRackEntry(fields[0], fields[1], stoi(fields[2]));
+        int count = splitLine(line, ',', fields, Max_Fields);
+        if (count == 4) {
+            // stoi converts string to integer and stod converts string to double
+            insertProduct(fields[0], fields[1], stod(fields[2]), stoi(fields[3]));
         }
-    } 
+    }
     read.close();
-    return true; 
-} 
-
-bool InventoryManager::insertProduct(string id, string name, double weight, int reorderLevel) { 
-    string cleanId = toUpperCase(trimText(id)); 
-    if (productExists(cleanId)) 
-        return false; 
-
-    ProductNode* newNode = new ProductNode(cleanId,name,weight, reorderLevel); 
-    tree.insert(newNode); 
     return true;
 }
 
-bool InventoryManager::deleteProduct(string id) { 
-    string cleanId = toUpperCase(trimText(id)); 
-    if (!productExists(cleanId)) 
-        return false; 
-    if (hasReservation(cleanId)) 
-        return false; 
-    return tree.remove(cleanId); 
-} 
-
-ProductNode* InventoryManager::searchProduct(string id) { 
-    string cleanId = toUpperCase(trimText(id)); 
-    return tree.search(cleanId); 
+// Reads stock quantities per rack from a text file and attaches those rack entries to each product
+bool InventoryManager::loadInventory(string file) {
+    ifstream read(file);
+    if (!read.is_open())
+        return false;
+    string line;
+    while (getline(read, line)) {
+        line = trimText(line);
+        if (line.empty() || line[0] == '#')
+            continue;
+        string fields[Max_Fields];
+        int count = splitLine(line, ',', fields, Max_Fields);
+        if (count == 3) {
+            addRackEntry(fields[0], fields[1], stoi(fields[2]));
+        }
+    }
+    read.close();
+    return true;
 }
 
-bool InventoryManager::productExists(string id) { 
-    return searchProduct(id) != NULL; 
-} 
+// Creates a new product and inserts it into the search tree (fails if the product ID already exists)
+bool InventoryManager::insertProduct(string id, string name, double weight, int reorderLevel) {
+    string cleanId = toUpperCase(trimText(id));
+    if (productExists(cleanId))
+        return false;
 
-double InventoryManager::getUnitWeight(string id) { 
-    ProductNode* node = searchProduct(id); 
+    ProductNode* newNode = new ProductNode(cleanId, name, weight, reorderLevel);
+    tree.insert(newNode);
+    return true;
+}
+
+// Removes a product from the catalog as long as it exists and isn't currently reserved for any order
+bool InventoryManager::deleteProduct(string id) {
+    string cleanId = toUpperCase(trimText(id));
+    if (!productExists(cleanId))
+        return false;
+    if (hasReservation(cleanId))
+        return false;
+    return tree.remove(cleanId);
+}
+
+// Looks up a product in the tree by its ID and returns a pointer to it (or NULL if not found)
+ProductNode* InventoryManager::searchProduct(string id) {
+    string cleanId = toUpperCase(trimText(id));
+    return tree.search(cleanId);
+}
+
+// Quick helper that returns true if a product ID exists in the system
+bool InventoryManager::productExists(string id) {
+    return searchProduct(id) != NULL;
+}
+
+// Returns the weight of one single unit of a product (or -1 if the product doesn't exist)
+double InventoryManager::getUnitWeight(string id) {
+    ProductNode* node = searchProduct(id);
     if (node == NULL)
-        return -1; 
-    return node->unitWeight; 
-} 
+        return -1;
+    return node->unitWeight;
+}
 
-bool InventoryManager::addRackEntry(string productId, string rackId, int qty) { 
+// Links a warehouse rack to a product with a starting stock quantity (avoids duplicate racks or invalid IDs)
+bool InventoryManager::addRackEntry(string productId, string rackId, int qty) {
     ProductNode* node = searchProduct(productId);
     if (node == NULL)
-        return false; 
+        return false;
     string cleanRack = toUpperCase(trimText(rackId));
     if (!racks.rackExists(cleanRack))
-        return false; 
-    if (qty < 0) 
-        return false; 
-    RackEntry* current = node->rackHead; 
-    while (current != NULL) { 
+        return false;
+    if (qty < 0)
+        return false;
+    RackEntry* current = node->rackHead;
+    while (current != NULL) {
         if (current->getRackId() == cleanRack)
             return false;
-        current = current->nextRack; 
+        current = current->nextRack;
     }
     RackEntry* newEntry = new RackEntry(cleanRack, qty);
-    if (node->rackHead == NULL) { 
-        node->rackHead = newEntry; 
+    if (node->rackHead == NULL) {
+        node->rackHead = newEntry;
     }
-    else { 
-        RackEntry* temp = node->rackHead; 
-        while (temp->nextRack != NULL) { 
-            temp = temp->nextRack; 
-        } 
-        temp->nextRack = newEntry; 
-    } 
-    return true; 
-} 
+    else {
+        RackEntry* temp = node->rackHead;
+        while (temp->nextRack != NULL) {
+            temp = temp->nextRack;
+        }
+        temp->nextRack = newEntry;
+    }
+    return true;
+}
 
-bool InventoryManager::setQuantity(string productId, string rackId, int newTotal, int& oldTotal) { 
-    ProductNode* node = searchProduct(productId); 
-    if (node == NULL) 
-        return false; 
-    string cleanRack = toUpperCase(trimText(rackId)); 
-    RackEntry* current = node->rackHead; 
-    while (current != NULL) { 
-        if (current->getRackId() == cleanRack) { 
-            if (newTotal < current->getReservedQty()) 
-                return false; 
+// Updates the total stock count of a product on a specific rack and saves the previous count in oldTotal
+bool InventoryManager::setQuantity(string productId, string rackId, int newTotal, int& oldTotal) {
+    ProductNode* node = searchProduct(productId);
+    if (node == NULL)
+        return false;
+    string cleanRack = toUpperCase(trimText(rackId));
+    RackEntry* current = node->rackHead;
+    while (current != NULL) {
+        if (current->getRackId() == cleanRack) {
+            if (newTotal < current->getReservedQty())
+                return false;
             oldTotal = current->getTotalQty();
             return current->setTotalQty(newTotal);
-        } 
-        current = current->nextRack; 
-    } 
-    return false; 
-} 
+        }
+        current = current->nextRack;
+    }
+    return false;
+}
 
-bool InventoryManager::removeRackEntry(string productId, string rackId) { 
-    ProductNode* node = searchProduct(productId); 
-    if (node == NULL) 
-        return false; 
-    string cleanRack = toUpperCase(trimText(rackId)); 
-    RackEntry* current = node->rackHead; 
-    RackEntry* previous = NULL; 
-    while (current != NULL) { 
-        if (current->getRackId() == cleanRack) { 
-            if (!current->canBeRemoved()) 
-                return false; 
-            if (previous == NULL) { 
-                node->rackHead = current->nextRack; 
+// Unlinks and deletes a rack entry from a product (only allowed if nothing is reserved/blocking removal)
+bool InventoryManager::removeRackEntry(string productId, string rackId) {
+    ProductNode* node = searchProduct(productId);
+    if (node == NULL)
+        return false;
+    string cleanRack = toUpperCase(trimText(rackId));
+    RackEntry* current = node->rackHead;
+    RackEntry* previous = NULL;
+    while (current != NULL) {
+        if (current->getRackId() == cleanRack) {
+            if (!current->canBeRemoved())
+                return false;
+            if (previous == NULL) {
+                node->rackHead = current->nextRack;
             }
-            else { 
-                previous->nextRack = current->nextRack; 
-            } 
-            delete current; 
-            return true; 
-        } 
-        previous = current; 
-        current = current->nextRack; 
-    } 
-    return false; 
-} 
+            else {
+                previous->nextRack = current->nextRack;
+            }
+            delete current;
+            return true;
+        }
+        previous = current;
+        current = current->nextRack;
+    }
+    return false;
+}
 
-void InventoryManager::displayRacks(string productId) { 
-    ProductNode* node = searchProduct(productId); 
-    if (node == NULL) { 
+// Prints out every rack storing a given product along with its stock details
+void InventoryManager::displayRacks(string productId) {
+    ProductNode* node = searchProduct(productId);
+    if (node == NULL) {
         cout << "Product not found" << endl;
         return;
-    } 
-    RackEntry* current = node->rackHead; 
-    while (current != NULL) { 
-        current->display();  
-        current = current->nextRack; 
-    } 
-} 
+    }
+    RackEntry* current = node->rackHead;
+    while (current != NULL) {
+        current->display();
+        current = current->nextRack;
+    }
+}
 
-int InventoryManager::totalStock(string productId) { 
-    ProductNode* node = searchProduct(productId); 
-    if (node == NULL) return 0; 
-    int sum = 0; 
-    RackEntry* current = node->rackHead; 
-    while (current !=NULL) { 
-        sum += current->getTotalQty(); 
-        current = current->nextRack; 
-    } 
-    return sum; 
-} 
+// Adds up the physical stock of a product across all racks (including reserved items)
+int InventoryManager::totalStock(string productId) {
+    ProductNode* node = searchProduct(productId);
+    if (node == NULL) return 0;
+    int sum = 0;
+    RackEntry* current = node->rackHead;
+    while (current != NULL) {
+        sum += current->getTotalQty();
+        current = current->nextRack;
+    }
+    return sum;
+}
 
-int InventoryManager::totalAvailable(string productId) { 
-    ProductNode* node = searchProduct(productId); 
+// Adds up only the free, unreserved units of a product available across all racks
+int InventoryManager::totalAvailable(string productId) {
+    ProductNode* node = searchProduct(productId);
     if (node == NULL)
-        return 0; 
-    int sum = 0; 
-    RackEntry* current = node->rackHead; 
-    while (current != NULL) { 
-        sum += current->availableQty(); 
-        current = current->nextRack; 
-    } 
-    return sum; 
-} 
+        return 0;
+    int sum = 0;
+    RackEntry* current = node->rackHead;
+    while (current != NULL) {
+        sum += current->availableQty();
+        current = current->nextRack;
+    }
+    return sum;
+}
 
+// Prints all products whose stock has dropped to or below their reorder threshold
 void InventoryManager::displayLowStock() {
     cout << "Products at or below reorder level:" << endl;
     cout << "====================================" << endl;
     tree.displayLowStock();
 }
 
-
-bool InventoryManager::hasReservation(string productId) { 
+// Checks if any rack holding this product currently has units reserved for an order
+bool InventoryManager::hasReservation(string productId) {
     ProductNode* node = searchProduct(productId);
-    if (node == NULL) 
-        return false; 
-    RackEntry* current = node->rackHead; 
-    while (current != NULL) { 
-        if (current->getReservedQty() > 0) 
-            return true; 
-        current = current->nextRack; 
-    } 
-    return false; 
-} 
+    if (node == NULL)
+        return false;
+    RackEntry* current = node->rackHead;
+    while (current != NULL) {
+        if (current->getReservedQty() > 0)
+            return true;
+        current = current->nextRack;
+    }
+    return false;
+}
 
-AllocationResult InventoryManager::allocate(string productId, int qty, string referenceLocationId, Graph& graph) { 
-    AllocationResult result; 
+// Smartly chooses which racks to pull a requested quantity from (prefers racks that can fulfill everything, then closest distance)
+AllocationResult InventoryManager::allocate(string productId, int qty, string referenceLocationId, Graph& graph) {
+    AllocationResult result;
     if (qty <= 0) {
         result.shortage = true;
         return result;
     }
-    ProductNode* product = searchProduct(productId); 
-    if (product == NULL) { 
-        result.shortage = true; 
-        return result; 
+    ProductNode* product = searchProduct(productId);
+    if (product == NULL) {
+        result.shortage = true;
+        return result;
     }
 
     int remaining = qty;
-    RackEntry* current = product->rackHead; 
-    while (current != NULL) { 
-        current->tempTaken = 0; 
-        current = current->nextRack; 
+    RackEntry* current = product->rackHead;
+    while (current != NULL) {
+        current->tempTaken = 0;
+        current = current->nextRack;
     }
-    while (remaining > 0) { 
-        RackEntry* bestRack = NULL; 
-        int bestDistance = 2000000000; 
-        int bestAvailable = -1; 
+    while (remaining > 0) {
+        RackEntry* bestRack = NULL;
+        int bestDistance = 2000000000;
+        int bestAvailable = -1;
         string bestRackId = "";
 
         RackEntry* temp = product->rackHead;
@@ -383,24 +395,25 @@ AllocationResult InventoryManager::allocate(string productId, int qty, string re
         }
 
 
-        if (bestRack == NULL) { 
-            result.shortage = true; 
-            break; 
-        } 
+        if (bestRack == NULL) {
+            result.shortage = true;
+            break;
+        }
 
-        int takeQty = remaining; 
-        if (bestAvailable < remaining) { 
-            takeQty = bestAvailable; 
-        } 
+        int takeQty = remaining;
+        if (bestAvailable < remaining) {
+            takeQty = bestAvailable;
+        }
 
-        result.addLine(bestRack->getRackId(), takeQty); 
-        bestRack->tempTaken += takeQty; 
-        remaining -= takeQty; 
-    } 
-    return result; 
-} 
+        result.addLine(bestRack->getRackId(), takeQty);
+        bestRack->tempTaken += takeQty;
+        remaining -= takeQty;
+    }
+    return result;
+}
 
-bool InventoryManager::reserve(string orderId,string productId,string rackId,int qty) {
+// Locks/reserves a specific quantity of a product on a rack for an order so other orders can't steal it
+bool InventoryManager::reserve(string orderId, string productId, string rackId, int qty) {
     string cleanOrderId = toUpperCase(trimText(orderId));
     string cleanProductId = toUpperCase(trimText(productId));
     string cleanRackId = toUpperCase(trimText(rackId));
@@ -422,7 +435,7 @@ bool InventoryManager::reserve(string orderId,string productId,string rackId,int
     return false;
 }
 
-
+// Cancels and frees up all stock reservations tied to a given order across the entire warehouse
 void InventoryManager::releaseAllReservations(string orderId) {
     string cleanOrderId = toUpperCase(trimText(orderId));
 
@@ -433,69 +446,74 @@ void InventoryManager::releaseAllReservations(string orderId) {
     tree.releaseReservationsForOrder(cleanOrderId);
 }
 
-
+// Verifies whether a robot is actually allowed to pick up 'qty' reserved units of a product from a rack
 bool InventoryManager::canCollect(string orderId, string productId, string rackId, int qty) {
-    ProductNode* product = searchProduct(productId); 
-    if (product == NULL) 
-        return false; 
-    RackEntry* current = product->rackHead; 
-    while (current != NULL) { 
+    ProductNode* product = searchProduct(productId);
+    if (product == NULL)
+        return false;
+    RackEntry* current = product->rackHead;
+    while (current != NULL) {
         string cleanRackId = toUpperCase(trimText(rackId));
 
-        if (current->getRackId() == cleanRackId) { 
-            return current->canConsume(orderId, qty); 
-        } 
-        current = current->nextRack; 
-    } 
+        if (current->getRackId() == cleanRackId) {
+            return current->canConsume(orderId, qty);
+        }
+        current = current->nextRack;
+    }
     return false;
-} 
+}
 
-bool InventoryManager::collect(string orderId, string productId, string rackId, int qty) { 
+// Officially deducts the picked-up items from both the order's reservation and the rack's physical stock
+bool InventoryManager::collect(string orderId, string productId, string rackId, int qty) {
     ProductNode* product = searchProduct(productId);
-    if (product == NULL) return false; 
-    RackEntry* current = product->rackHead; 
-    while (current != NULL) { 
+    if (product == NULL) return false;
+    RackEntry* current = product->rackHead;
+    while (current != NULL) {
         string cleanRackId = toUpperCase(trimText(rackId));
         if (current->getRackId() == cleanRackId) {
-            return current->consumeForCollection(orderId, qty); 
-        } 
+            return current->consumeForCollection(orderId, qty);
+        }
         current = current->nextRack;
-    } 
-    return false; 
-} 
+    }
+    return false;
+}
 
+// Checks if a specific product is currently registered on a specific rack
 bool InventoryManager::rackEntryExists(string productId, string rackId) {
-    ProductNode* product = searchProduct(productId); 
+    ProductNode* product = searchProduct(productId);
     if (product == NULL)
-        return false; 
-    string cleanRack = toUpperCase(trimText(rackId)); 
-    RackEntry* current = product->rackHead; 
-    while (current != NULL) { 
+        return false;
+    string cleanRack = toUpperCase(trimText(rackId));
+    RackEntry* current = product->rackHead;
+    while (current != NULL) {
         if (current->getRackId() == cleanRack)
-            return true; 
-        current = current->nextRack; 
-    } 
-    return false; 
-} 
+            return true;
+        current = current->nextRack;
+    }
+    return false;
+}
 
+// Returns how many units of a product are currently reserved on a specific rack
 int InventoryManager::reservedQty(string productId, string rackId) {
-    ProductNode* product = searchProduct(productId); 
+    ProductNode* product = searchProduct(productId);
     if (product == NULL)
-        return 0; 
-    string cleanRack = toUpperCase(trimText(rackId)); 
-    RackEntry* current = product->rackHead; 
-    while (current != NULL) { 
+        return 0;
+    string cleanRack = toUpperCase(trimText(rackId));
+    RackEntry* current = product->rackHead;
+    while (current != NULL) {
         if (current->getRackId() == cleanRack)
-           return current->getReservedQty(); 
-        current = current->nextRack; 
-    } 
-    return 0; 
-} 
+            return current->getReservedQty();
+        current = current->nextRack;
+    }
+    return 0;
+}
 
+// Looks up which map location/node ID a given rack is physically sitting at
 string InventoryManager::getRackLocation(string rackId) {
     return racks.getRackLocation(toUpperCase(trimText(rackId)));
 }
 
+// Runs the interactive console menu so the user can view, add, update, or test inventory features
 void InventoryManager::runInventoryMenu(Graph& graph, UndoManager& undo) {
     (void)undo;
 
@@ -586,7 +604,7 @@ void InventoryManager::runInventoryMenu(Graph& graph, UndoManager& undo) {
 
             if (result.shortage) {
                 cout << "Shortage or unreachable rack. Allocated: "
-                     << result.totalAllocated << endl;
+                    << result.totalAllocated << endl;
             }
             else {
                 cout << "Allocation:" << endl;
