@@ -10,12 +10,10 @@ enum LocationType {
     Location_Packing,
     Location_Charging
 };
-
 enum PathStatus {
     Path_Open,
     Path_Blocked
 };
-
 enum OrderStatus {
     Order_Pending,
     Order_Reserved,
@@ -24,7 +22,6 @@ enum OrderStatus {
     Order_Completed,
     Order_Cancelled
 };
-
 enum RobotStatus {
     Robot_Available,
     Robot_Assigned,
@@ -32,7 +29,6 @@ enum RobotStatus {
     Robot_Charging,
     Robot_UnAvailable
 };
-
 enum RobotType {
     Type_Picker,
     Type_Carrier,
@@ -59,7 +55,6 @@ inline int Heavy_MinUnitWeight = 10;
 
 const inline int MaxSlots_PerStation = 10;
 const inline int Max_Fields = 8;
-
 
 // String helper functions 
 inline string toUpperCase( string str) {
@@ -125,10 +120,8 @@ inline int splitLine( string line, char delimiter, string fields[], int maxField
         fields[count] = trimText(currentField);
         count++;
     }
-
     return count;
 }
-
 
 // Input Validation helper functions
 inline int readIntInRange(string prompt, int low, int high) {
@@ -207,7 +200,6 @@ inline void pauseScreen() {
     string dummy;
     getline(cin, dummy);
 }
-
 
 // enums to string functions
 inline string locationTypeToText(LocationType type) {
@@ -362,7 +354,6 @@ inline bool parseRobotType(string text, RobotType& outType) {
     return false;
 }
 
-
 // Battery Formula 
 inline double legConsumption(int distance, double rate, double carriedWeight, double maxCapacity) {
     if (maxCapacity <= 0)
@@ -371,12 +362,10 @@ inline double legConsumption(int distance, double rate, double carriedWeight, do
     return distance * rate * (1.0 + 0.5 * ((double)carriedWeight / maxCapacity));
 }
 
-
 // RouteResult & Linked List
 struct RouteNode {
     string locationId;
     RouteNode* next;
-
     RouteNode(string id) : locationId(id), next(nullptr) {}
 };
 
@@ -387,10 +376,8 @@ private:
         totalDistance = other.totalDistance;
         locationCount = other.locationCount;
         found = other.found;
-
         if (!other.head)
             return;
-
         head = new RouteNode(other.head->locationId);
         RouteNode* currTarget = head;
         RouteNode* currSource = other.head->next;
