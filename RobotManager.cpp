@@ -5,626 +5,191 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <string>
+#include <stdexcept>
+#include <cmath>
 
 using namespace std;
 
+RobotNode::RobotNode(Robot* robotPtr) : robot(robotPtr), next(nullptr) {}
 
-// ==================== ROBOT NODE ====================
+RobotManager::RobotManager(Graph& warehouseGraph) : head(nullptr), count(0), graph(warehouseGraph) {}
 
-RobotNode::RobotNode(Robot* robotPtr)
-{
-	robot = robotPtr;
-	next = nullptr;
+RobotManager::~RobotManager() {
+    while (head) {
+        RobotNode* old = head;
+        head = head->next;
+        delete old->robot;
+        delete old;
+    }
+    count = 0;
 }
 
-
-// ==================== ROBOT MANAGER ====================
-
-RobotManager::RobotManager(Graph& warehouseGraph)
-	: head(nullptr), count(0), graph(warehouseGraph)
-{
+void RobotManager::appendRobot(Robot* robot) {
+    RobotNode* node = new RobotNode(robot);
+    if (!head) head = node;
+    else { RobotNode* tail = head; while (tail->next) tail = tail->next; tail->next = node; }
+    ++count;
 }
 
-
-RobotManager::~RobotManager()
-{
-	RobotNode* current = head;
-
-	while (current != nullptr)
-	{
-		RobotNode* nextNode = current->next;
-
-		delete current->robot;
-		delete current;
-
-		current = nextNode;
-	}
-
-	head = nullptr;
-	count = 0;
+Robot* RobotManager::findRobot(const string& rawId) {
+    string id = toUpperCase(trimText(rawId));
+    for (RobotNode* node = head; node; node = node->next)
+        if (node->robot && node->robot->getId() == id) return node->robot;
+    return nullptr;
 }
 
-
-// ==================== APPEND ROBOT ====================
-
-void RobotManager::appendRobot(Robot* robot)
-{
-	if (robot == nullptr)
-		return;
-
-	RobotNode* newNode = new RobotNode(robot);
-
-	if (head == nullptr)
-	{
-		head = newNode;
-	}
-	else
-	{
-		RobotNode* current = head;
-
-		while (current->next != nullptr)
-		{
-			current = current->next;
-		}
-
-		current->next = newNode;
-	}
-
-	count++;
+bool RobotManager::registerRobot(const string& rawId, RobotType type, const string& rawLocation, double battery, double capacity) {
+    string id = toUpperCase(trimText(rawId));
+    string location = toUpperCase(trimText(rawLocation));
+    if (id.empty() || location.empty() || findRobot(id) || !graph.locationExists(location) || !isfinite(battery) || !isfinite(capacity) || battery < 0.0 || battery > Full_Battery) return false;
+    string typeText = robotTypeToText(type);
+    Robot* robot = nullptr;
+    if (type == Type_Picker) robot = new Picker(id, typeText, location, battery, capacity);
+    else if (type == Type_Carrier) robot = new Carrier(id, typeText, location, battery, capacity);
+    else if (type == Type_Heavy) robot = new HeavyDuty(id, typeText, location, battery, capacity);
+    if (!robot) return false;
+    if (!robot->isCapacityValid()) { delete robot; cout << "Rejected: capacity violates type limit.\n"; return false; }
+    appendRobot(robot);
+    return true;
 }
 
-
-// ==================== FIND ROBOT ====================
-
-Robot* RobotManager::findRobot(const string& id)
-{
-	RobotNode* current = head;
-
-	while (current != nullptr)
-	{
-		if (current->robot->getId() == id)
-			return current->robot;
-
-		current = current->next;
-	}
-
-	return nullptr;
+bool RobotManager::loadRobots(const string& file) {
+    ifstream input(file);
+    if (!input.is_open()) { cout << "Could not open robots file: " << file << '\n'; return false; }
+    string line; int lineNumber = 0;
+    while (getline(input, line)) {
+        ++lineNumber; line = trimText(line);
+        if (line.empty() || line[0] == '#') continue;
+        string fields[8]; int fieldCount = splitLine(line, ',', fields, 8);
+        if (fieldCount != 5) { cout << "Warning: invalid robots.txt line " << lineNumber << ".\n"; continue; }
+        RobotType type;
+        double battery = 0.0, capacity = 0.0;
+        bool numbersValid = true;
+        try {
+            size_t usedBattery = 0, usedCapacity = 0;
+            battery = stod(fields[3], &usedBattery); capacity = stod(fields[4], &usedCapacity);
+            numbersValid = usedBattery == fields[3].length() && usedCapacity == fields[4].length();
+        } catch (const invalid_argument&) { numbersValid = false; }
+          catch (const out_of_range&) { numbersValid = false; }
+        if (!parseRobotType(fields[1], type) || !numbersValid ||
+            !registerRobot(fields[0], type, fields[2], battery, capacity))
+            cout << "Warning: rejected robots.txt line " << lineNumber << ".\n";
+    }
+    return true;
 }
 
-
-// ==================== REGISTER ROBOT ====================
-
-bool RobotManager::registerRobot(
-	const string& id,
-	RobotType type,
-	const string& location,
-	double battery,
-	double capacity)
-{
-	if (id.empty() || location.empty())
-	{
-		cout << "Rejected: ID or location cannot be empty.\n";
-		return false;
-	}
-
-	if (findRobot(id) != nullptr)
-	{
-		cout << "Rejected: duplicate robot ID.\n";
-		return false;
-	}
-
-	if (!graph.locationExists(location))
-	{
-		cout << "Rejected: location does not exist.\n";
-		return false;
-	}
-
-	if (battery < 0 || battery > 100)
-	{
-		cout << "Rejected: battery must be between 0 and 100.\n";
-		return false;
-	}
-
-	Robot* newRobot = nullptr;
-
-	switch (type)
-	{
-	case Type_Picker:
-		newRobot = new Picker(id, location, battery, capacity);
-		break;
-
-	case Type_Carrier:
-		newRobot = new Carrier(id, location, battery, capacity);
-		break;
-
-	case Type_Heavy:
-		newRobot = new HeavyDuty(id, location, battery, capacity);
-		break;
-
-	default:
-		cout << "Rejected: invalid robot type.\n";
-		return false;
-	}
-
-	if (!newRobot->isCapacityValid())
-	{
-		cout << "Rejected: capacity violates type limit.\n";
-		delete newRobot;
-		return false;
-	}
-
-	appendRobot(newRobot);
-
-	cout << "Robot registered successfully.\n";
-	return true;
+void RobotManager::displayAllRobots() {
+    if (!head) { cout << "No robots registered.\n"; return; }
+    cout << left << setw(9) << "ID" << setw(10) << "TYPE" << setw(10) << "LOCATION"
+         << right << setw(8) << "BATTERY" << setw(10) << "CAPACITY" << "  "
+         << left << setw(22) << "STATUS" << "TASK\n";
+    for (RobotNode* node = head; node; node = node->next) node->robot->display();
 }
 
-
-// ==================== LOAD ROBOTS ====================
-
-bool RobotManager::loadRobots(const string& file)
-{
-	ifstream inputFile(file);
-
-	if (!inputFile.is_open())
-	{
-		cout << "Error: could not open " << file << endl;
-		return false;
-	}
-
-	string line;
-	int lineNumber = 0;
-	int loaded = 0;
-	int rejected = 0;
-
-	while (getline(inputFile, line))
-	{
-		lineNumber++;
-
-		line = trimText(line);
-
-		// Ignore blank lines and comments
-		if (line.empty() || line[0] == '#')
-			continue;
-
-		string fields[6];
-
-		int fieldCount = splitLine(line, ',', fields, 6);
-
-		if (fieldCount != 5)
-		{
-			cout << "Warning: invalid field count at line "
-				<< lineNumber << ".\n";
-
-			rejected++;
-			continue;
-		}
-
-		string id = fields[0];
-		string typeText = toUpperCase(fields[1]);
-		string location = fields[2];
-
-		double battery;
-		double capacity;
-
-		try
-		{
-			size_t batteryPosition;
-			size_t capacityPosition;
-
-			battery = stod(fields[3], &batteryPosition);
-			capacity = stod(fields[4], &capacityPosition);
-
-			if (batteryPosition != fields[3].length() ||
-				capacityPosition != fields[4].length())
-			{
-				throw invalid_argument("Invalid number");
-			}
-		}
-		catch (...)
-		{
-			cout << "Warning: invalid battery or capacity at line "
-				<< lineNumber << ".\n";
-
-			rejected++;
-			continue;
-		}
-
-		RobotType type;
-
-		if (typeText == "PICKER")
-			type = Type_Picker;
-		else if (typeText == "CARRIER")
-			type = Type_Carrier;
-		else if (typeText == "HEAVY")
-			type = Type_Heavy;
-		else
-		{
-			cout << "Warning: unknown robot type at line "
-				<< lineNumber << ".\n";
-
-			rejected++;
-			continue;
-		}
-
-		if (registerRobot(id, type, location, battery, capacity))
-			loaded++;
-		else
-			rejected++;
-	}
-
-	inputFile.close();
-
-	cout << "\nRobot loading completed.\n";
-	cout << "Loaded: " << loaded << endl;
-	cout << "Rejected: " << rejected << endl;
-
-	return true;
+void RobotManager::displayAvailableRobots() {
+    bool found = false;
+    for (RobotNode* node = head; node; node = node->next) {
+        if (node->robot->getStatus() == Robot_Available) {
+            if (!found) cout << "Available robots:\n";
+            node->robot->display(); found = true;
+        }
+    }
+    if (!found) cout << "No available robots.\n";
 }
 
-
-// ==================== DISPLAY ROBOTS ====================
-
-void RobotManager::displayAllRobots()
-{
-	if (head == nullptr)
-	{
-		cout << "No robots registered.\n";
-		return;
-	}
-
-	cout << "\n================ ROBOT FLEET ================\n";
-
-	cout << left
-		<< setw(10) << "ID"
-		<< setw(12) << "TYPE"
-		<< setw(12) << "LOCATION"
-		<< right << setw(8) << "BATTERY"
-		<< setw(12) << "CAPACITY"
-		<< "   STATUS / TASK\n";
-
-	cout << string(85, '-') << endl;
-
-	RobotNode* current = head;
-
-	while (current != nullptr)
-	{
-		current->robot->display();
-		current = current->next;
-	}
-
-	cout << "\nTotal robots: " << count << endl;
+bool RobotManager::updateBattery(const string& id, double level) {
+    Robot* robot = findRobot(id);
+    return robot && robot->setBattery(level);
 }
 
-
-void RobotManager::displayAvailableRobots()
-{
-	RobotNode* current = head;
-	bool found = false;
-
-	cout << "\n========== AVAILABLE ROBOTS ==========\n";
-
-	while (current != nullptr)
-	{
-		if (current->robot->getStatus() == Robot_Available)
-		{
-			current->robot->display();
-			found = true;
-		}
-
-		current = current->next;
-	}
-
-	if (!found)
-		cout << "No available robots.\n";
+bool RobotManager::assignRobot(const string& id, const string& taskId) {
+    Robot* robot = findRobot(id);
+    if (!robot || taskId.empty() || robot->getStatus() != Robot_Available || !robot->getTask().empty()) return false;
+    robot->setStatus(Robot_Assigned); robot->setTask(taskId);
+    return true;
 }
 
-
-// ==================== UPDATE BATTERY ====================
-
-bool RobotManager::updateBattery(
-	const string& id,
-	double level)
-{
-	Robot* robot = findRobot(id);
-
-	if (robot == nullptr)
-	{
-		cout << "Robot not found.\n";
-		return false;
-	}
-
-	if (!robot->setBattery(level))
-	{
-		cout << "Invalid battery level. Enter 0 to 100.\n";
-		return false;
-	}
-
-	cout << "Battery updated successfully.\n";
-	return true;
+bool RobotManager::releaseRobot(const string& id) {
+    Robot* robot = findRobot(id);
+    if (!robot || robot->getStatus() != Robot_Assigned) return false;
+    robot->setStatus(Robot_Available); robot->setTask("");
+    if (robot->needsCharging()) cout << "Robot " << robot->getId() << " needs charging.\n";
+    return true;
 }
 
-
-// ==================== ASSIGN ROBOT ====================
-
-bool RobotManager::assignRobot(
-	const string& id,
-	const string& taskId)
-{
-	Robot* robot = findRobot(id);
-
-	if (robot == nullptr)
-	{
-		cout << "Robot not found.\n";
-		return false;
-	}
-
-	if (taskId.empty())
-	{
-		cout << "Task ID cannot be empty.\n";
-		return false;
-	}
-
-	if (robot->getStatus() != Robot_Available ||
-		!robot->getTask().empty())
-	{
-		cout << "Rejected: robot is not available "
-			<< "or already has an active assignment.\n";
-		return false;
-	}
-
-	robot->setStatus(Robot_Assigned);
-	robot->setTask(taskId);
-
-	cout << "Robot assigned successfully.\n";
-	return true;
+bool RobotManager::setMaintenance(const string& id, bool toMaintenance, RobotStatus& oldStatus) {
+    Robot* robot = findRobot(id);
+    if (!robot) return false;
+    oldStatus = robot->getStatus();
+    if (toMaintenance) {
+        if (oldStatus == Robot_Assigned || oldStatus == Robot_Charging ||
+            oldStatus == Robot_WaitingforCharging || oldStatus == Robot_UnAvailable || !robot->getTask().empty()) return false;
+        robot->setStatus(Robot_UnAvailable);
+        return true;
+    }
+    if (oldStatus != Robot_UnAvailable) return false;
+    robot->setStatus(Robot_Available);
+    return true;
 }
 
-
-// ==================== RELEASE ROBOT ====================
-
-bool RobotManager::releaseRobot(const string& id)
-{
-	Robot* robot = findRobot(id);
-
-	if (robot == nullptr)
-	{
-		cout << "Robot not found.\n";
-		return false;
-	}
-
-	if (robot->getStatus() != Robot_Assigned)
-	{
-		cout << "Robot is not currently assigned.\n";
-		return false;
-	}
-
-	robot->setStatus(Robot_Available);
-	robot->setTask("");
-
-	cout << "Robot released successfully.\n";
-
-	if (robot->needsCharging())
-		cout << "Warning: this robot needs charging.\n";
-
-	return true;
+bool RobotManager::restoreStatus(const string& id, RobotStatus status) {
+    Robot* robot = findRobot(id);
+    if (!robot) return false;
+    robot->setStatus(status);
+    if (status != Robot_Assigned) robot->setTask("");
+    return true;
 }
 
+RobotNode* RobotManager::getHead() const { return head; }
+int RobotManager::getCount() const { return count; }
 
-// ==================== MAINTENANCE ====================
-
-bool RobotManager::setMaintenance(
-	const string& id,
-	bool toMaintenance,
-	RobotStatus& oldStatus)
-{
-	Robot* robot = findRobot(id);
-
-	if (robot == nullptr)
-	{
-		cout << "Robot not found.\n";
-		return false;
-	}
-
-	oldStatus = robot->getStatus();
-
-	if (toMaintenance)
-	{
-		if (oldStatus == Robot_Assigned ||
-			oldStatus == Robot_Charging ||
-			oldStatus == Robot_WaitingforCharging)
-		{
-			cout << "Rejected: robot is assigned or involved in charging.\n";
-			return false;
-		}
-
-		if (oldStatus == Robot_UnAvailable)
-		{
-			cout << "Robot is already unavailable.\n";
-			return false;
-		}
-
-		if (!robot->getTask().empty())
-		{
-			cout << "Rejected: robot still has an active task.\n";
-			return false;
-		}
-
-		robot->setStatus(Robot_UnAvailable);
-
-		cout << "Robot sent to maintenance.\n";
-	}
-	else
-	{
-		if (oldStatus != Robot_UnAvailable)
-		{
-			cout << "Robot is not in maintenance.\n";
-			return false;
-		}
-
-		robot->setStatus(Robot_Available);
-
-		cout << "Robot returned from maintenance.\n";
-	}
-
-	return true;
-}
-
-
-// ==================== RESTORE STATUS ====================
-
-bool RobotManager::restoreStatus(
-	const string& id,
-	RobotStatus status)
-{
-	Robot* robot = findRobot(id);
-
-	if (robot == nullptr)
-		return false;
-
-	robot->setStatus(status);
-	return true;
-}
-
-
-// ==================== ACCESSORS ====================
-
-RobotNode* RobotManager::getHead() const
-{
-	return head;
-}
-
-
-int RobotManager::getCount() const
-{
-	return count;
-}
-
-
-// ==================== ROBOT MENU ====================
-
-void runRobotMenu(
-	RobotManager& robots,
-	Graph& graph,
-	UndoManager& undo)
-{
-	int choice;
-
-	do
-	{
-		cout << "\n========== ROBOT FLEET MANAGEMENT ==========\n";
-		cout << "1. Display all robots\n";
-		cout << "2. Display available robots\n";
-		cout << "3. Register a robot\n";
-		cout << "4. Update robot battery\n";
-		cout << "5. Assign robot to task\n";
-		cout << "6. Release robot\n";
-		cout << "7. Send robot to / return from maintenance\n";
-		cout << "0. Back\n";
-
-		choice = readIntInRange("Enter choice: ", 0, 7);
-
-		switch (choice)
-		{
-		case 1:
-			robots.displayAllRobots();
-			break;
-
-		case 2:
-			robots.displayAvailableRobots();
-			break;
-
-		case 3:
-		{
-			string id = readNonEmptyString("Robot ID: ");
-
-			cout << "1. Picker\n";
-			cout << "2. Carrier\n";
-			cout << "3. Heavy Duty\n";
-
-			int typeChoice = readIntInRange("Robot type: ", 1, 3);
-
-			RobotType type;
-
-			if (typeChoice == 1)
-				type = Type_Picker;
-			else if (typeChoice == 2)
-				type = Type_Carrier;
-			else
-				type = Type_Heavy;
-
-			string location =
-				readNonEmptyString("Current location ID: ");
-
-			double battery =
-				readDoubleInRange("Battery (0-100): ", 0, 100);
-
-			double capacity =
-				readDoubleInRange("Maximum capacity (kg): ", 0.01, 60);
-
-			robots.registerRobot(
-				id, type, location, battery, capacity
-			);
-
-			break;
-		}
-
-		case 4:
-		{
-			string id = readNonEmptyString("Robot ID: ");
-
-			double level =
-				readDoubleInRange("New battery level (0-100): ", 0, 100);
-
-			robots.updateBattery(id, level);
-			break;
-		}
-
-		case 5:
-		{
-			string id = readNonEmptyString("Robot ID: ");
-			string task = readNonEmptyString("Task ID: ");
-
-			robots.assignRobot(id, task);
-			break;
-		}
-
-		case 6:
-		{
-			string id = readNonEmptyString("Robot ID: ");
-
-			robots.releaseRobot(id);
-			break;
-		}
-
-		case 7:
-		{
-			string id = readNonEmptyString("Robot ID: ");
-
-			cout << "1. Send to maintenance\n";
-			cout << "2. Return from maintenance\n";
-
-			int action =
-				readIntInRange("Choose action: ", 1, 2);
-
-			RobotStatus oldStatus;
-
-			bool success = robots.setMaintenance(
-				id,
-				action == 1,
-				oldStatus
-			);
-
-			if (success)
-				undo.recordMaintenance(id, oldStatus);
-
-			break;
-		}
-		}
-
-		if (choice != 0)
-			pauseScreen();
-
-	} while (choice != 0);
+void runRobotMenu(RobotManager& robots, Graph& graph, UndoManager& undo) {
+    (void)graph;
+    int choice;
+    do {
+        cout << "\n========== ROBOT FLEET MANAGEMENT ==========\n"
+             << "1. Display all robots\n2. Display available robots\n3. Register robot\n"
+             << "4. Update battery\n5. Assign robot\n6. Release robot\n7. Put robot in / out of maintenance\n0. Back\n";
+        choice = readIntInRange("Enter choice: ", 0, 7);
+        if (choice == 1) robots.displayAllRobots();
+        else if (choice == 2) robots.displayAvailableRobots();
+        else if (choice == 3) {
+            string id = toUpperCase(readNonEmptyString("Robot ID: "));
+            cout << "1. PICKER  2. CARRIER  3. HEAVY\n";
+            int typeChoice = readIntInRange("Robot type: ", 1, 3);
+            RobotType type = typeChoice == 1 ? Type_Picker : (typeChoice == 2 ? Type_Carrier : Type_Heavy);
+            string location = toUpperCase(readNonEmptyString("Current location ID: "));
+            double battery = readDoubleInRange("Battery (0-100): ", 0.0, 100.0);
+            double capacity = readDoubleInRange("Capacity in kg: ", 0.01, 60.0);
+            cout << (robots.registerRobot(id, type, location, battery, capacity) ? "Robot registered.\n" : "Robot rejected. Check ID, location and type capacity.\n");
+        }
+        else if (choice == 4) {
+            string id = toUpperCase(readNonEmptyString("Robot ID: "));
+            double level = readDoubleInRange("New battery (0-100): ", 0.0, 100.0);
+            cout << (robots.updateBattery(id, level) ? "Battery updated.\n" : "Robot not found or invalid battery.\n");
+        }
+        else if (choice == 5) {
+            string id = toUpperCase(readNonEmptyString("Robot ID: "));
+            string task = toUpperCase(readNonEmptyString("Task / Order ID: "));
+            cout << (robots.assignRobot(id, task) ? "Robot assigned.\n" : "Assignment rejected. Robot must be Available and unassigned.\n");
+        }
+        else if (choice == 6) {
+            string id = toUpperCase(readNonEmptyString("Robot ID: "));
+            cout << (robots.releaseRobot(id) ? "Robot released.\n" : "Release rejected. Robot must have an active assignment.\n");
+        }
+        else if (choice == 7) {
+            string id = toUpperCase(readNonEmptyString("Robot ID: "));
+            Robot* robot = robots.findRobot(id);
+            if (!robot) cout << "Robot not found.\n";
+            else {
+                bool toMaintenance = robot->getStatus() != Robot_UnAvailable;
+                RobotStatus oldStatus;
+                if (robots.setMaintenance(id, toMaintenance, oldStatus)) {
+                    undo.recordMaintenance(id, oldStatus);
+                    cout << (toMaintenance ? "Robot placed in maintenance.\n" : "Robot returned to Available.\n");
+                } else cout << "Maintenance change rejected: robot may be assigned, charging, queued, or already in the requested state.\n";
+            }
+        }
+        if (choice != 0) pauseScreen();
+    } while (choice != 0);
 }
